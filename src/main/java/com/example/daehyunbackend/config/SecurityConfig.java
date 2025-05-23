@@ -1,0 +1,60 @@
+package com.example.daehyunbackend.config;
+
+import com.example.daehyunbackend.unit.JwtAuthenticationFilter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsUtils;
+
+
+@RequiredArgsConstructor
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    private static final String[] swaggerList = {"/swagger-ui/**",
+            "/h2-console/**",
+            "/favicon.ico",
+            "/error",
+            "/swagger-ui/**",
+            "/swagger-resources/**",
+            "/v3/api-docs/**"};
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(final HttpSecurity http) throws Exception {
+        return http
+                .csrf(AbstractHttpConfigurer::disable)
+                .headers(header -> header.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(authorize -> authorize
+                        // CORS Preflight 요청 허용
+                        .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
+                        // 타임리프 템플릿 허용
+                        .requestMatchers("/ad.html").permitAll()
+                        .requestMatchers("/core/**").permitAll()
+                        .requestMatchers("/attach/images/**").permitAll()
+                        .requestMatchers("/ad/**").permitAll()
+                        .requestMatchers("/login/oauth2/code/google").permitAll()
+                        .requestMatchers(swaggerList).permitAll()
+                        // 기타 모든 요청은 인증 필요
+                        .requestMatchers("/**").authenticated()
+                )
+                .addFilterBefore(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
+    }
+}
