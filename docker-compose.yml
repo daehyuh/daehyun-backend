@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    volumes:
+      - ./image:/upload/images  # 호스트 image/ 폴더를 컨테이너와 연결
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mariadb://db:3306/daehyun
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 1234
+      IMAGE_UPLOAD_DIR: /upload/images  # Spring에서 사용할 업로드 디렉토리
+
+  db:
+    image: mariadb:10.6
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: 1234
+      MARIADB_DATABASE: daehyun
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+volumes:
+  mariadb_data:
