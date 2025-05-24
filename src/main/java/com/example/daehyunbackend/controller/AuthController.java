@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,6 +19,8 @@ public class AuthController {
 
     @Value("${frontend.url}")
     private String frontendUrl;
+    @Value("${frontend.domain}")
+    private String frontendDomain;
 
     AuthService authService;
 
@@ -32,9 +36,12 @@ public class AuthController {
         String accessToken = authResponseDTO.getAccessToken();
         String refreshToken = authResponseDTO.getRefreshToken();
 
-        response.setHeader("Set-Cookie", "accessToken=" + accessToken + "; Path=/; Domain="+frontendUrl+"; httpOnly; SameSite=None; Secure;");
-//        response.addHeader("Set-Cookie", "refreshToken=" + refreshToken + "; Path=/; Domain=localhost:5173; SameSite=None; Secure;");
-        // httpOnly 제외됨
+//        response.setHeader("Set-Cookie", "accessToken=" + accessToken + "; Path=/; Domain="+frontendDomain+"; SameSite=None; Secure;"); // httpOnly 제외됨
+//        response.addHeader("Set-Cookie", "refreshToken=" + refreshToken + "; Path=/; Domain="+frontendDomain+"; SameSite=None; Secure;"); // httpOnly 제외됨
+
+        response.setHeader("Set-Cookie", "accessToken=" + accessToken + "; Path=/; Domain="+frontendDomain+"; HttpOnly; SameSite=None; Secure;");
+        response.addHeader("Set-Cookie", "refreshToken=" + refreshToken + "; Path=/; Domain="+frontendDomain+"; HttpOnly; SameSite=None; Secure;");
+
         return "redirect:"+frontendUrl;
     }
 
