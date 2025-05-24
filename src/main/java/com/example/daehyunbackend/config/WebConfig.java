@@ -16,7 +16,8 @@ public class WebConfig implements WebMvcConfigurer {
 //                /* DEV */
                 "http://localhost", // backend
                 "http://localhost:5173", // frontend
-                "https://daehyun-frontend.vercel.app",
+                     "https://daehyuh.dev", // frontend (React)
+                    "https://api.daehyuh.dev", // frontend (React)
 //                /* PRODUCTION */
                 "https://hufsnc.com", // backend
                 "https://대현.com" // frontend
