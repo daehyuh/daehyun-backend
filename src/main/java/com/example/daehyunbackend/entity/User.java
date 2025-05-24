@@ -14,13 +14,15 @@ import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 
-@Data
+@Getter
 @Entity
 @NoArgsConstructor  // 기본 생성자
 @AllArgsConstructor // 모든 필드를 받는 생성자
@@ -32,8 +34,11 @@ public class User {
     @Column(nullable = false , unique = true)
     private String providerId;
     private String provider;
+    @Setter
     private String name;
+    @Setter
     private String email;
+    @Setter
     private String avatarUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

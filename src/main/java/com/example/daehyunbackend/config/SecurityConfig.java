@@ -2,6 +2,7 @@ package com.example.daehyunbackend.config;
 
 import com.example.daehyunbackend.unit.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -9,8 +10,11 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsUtils;
@@ -21,6 +25,10 @@ import org.springframework.web.cors.CorsUtils;
 @EnableWebSecurity
 public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Value("${admin.password}")
+    private String adminPassword;
+
 
     private static final String[] swaggerList = {"/swagger-ui/**",
             "/h2-console/**",
@@ -42,17 +50,17 @@ public class SecurityConfig {
                 .headers(header -> header.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        // CORS Preflight 요청 허용
+                        // CORS Preflight (Option) 요청 허용
                         .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
                         // 타임리프 템플릿 허용
-                        .requestMatchers("/ad.html").permitAll()
+                        .requestMatchers("/").permitAll()
                         .requestMatchers("/core/**").permitAll()
+                        .requestMatchers("/core/ad").permitAll()
                         .requestMatchers("/attach/images/**").permitAll()
-                        .requestMatchers("/ad/**").permitAll()
                         .requestMatchers("/login/oauth2/code/google").permitAll()
                         .requestMatchers(swaggerList).permitAll()
                         // 기타 모든 요청은 인증 필요
-                        .requestMatchers("/**").authenticated()
+                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

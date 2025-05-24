@@ -5,6 +5,7 @@ import com.example.daehyunbackend.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,6 +14,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 @RequestMapping(value = "/login/oauth2", produces = "application/json")
 public class AuthController {
+
+    @Value("${frontend.url}")
+    private String frontendUrl;
 
     AuthService authService;
 
@@ -28,11 +32,10 @@ public class AuthController {
         String accessToken = authResponseDTO.getAccessToken();
         String refreshToken = authResponseDTO.getRefreshToken();
 
-        response.setHeader("Set-Cookie", "accessToken=" + accessToken + "; Path=/; Domain=localhost; HttpOnly; SameSite=None; Secure;");
-        response.addHeader("Set-Cookie", "refreshToken=" + refreshToken + "; Path=/; Domain=localhost; HttpOnly; SameSite=None; Secure;");
-
-        return "redirect:localhost";
+        response.setHeader("Set-Cookie", "accessToken=" + accessToken + "; Path=/; Domain=frontendUrl; SameSite=None; Secure;");
+//        response.addHeader("Set-Cookie", "refreshToken=" + refreshToken + "; Path=/; Domain=localhost:5173; SameSite=None; Secure;");
+        // httpOnly 제외됨
+        return "redirect:"+frontendUrl;
     }
-
 
 }

@@ -13,13 +13,15 @@ import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 
-@Data
+@Getter
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
@@ -37,6 +39,7 @@ public class Record {
     private String current_collection;
     private int current_nametag;
     private String current_skin;
+    @Setter
     private int nickname_color;
     private int current_collection2;
     private int rankpoint2;
@@ -44,6 +47,7 @@ public class Record {
     private int current_collection3;
     private int EXPERIENCE;
     private int EXPERIENCE2;
+    @Setter
     private String NICKNAME;
     private Long ID;
     private int guild_id;
@@ -54,6 +58,8 @@ public class Record {
     private int guild_initial_color;
     private int guild_initial_background_color;
     private String gem;
+
+    @Setter
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "AcoountId", referencedColumnName = "id")
@@ -94,4 +100,6 @@ public class Record {
                 .date(LocalDate.now())
                 .build();
     }
+
+
 }

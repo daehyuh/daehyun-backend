@@ -105,11 +105,11 @@ public class CoreController {
 
     @Operation(summary = "획초계산 - ✅전체 접근", tags = {"Core"})
     @GetMapping("/records/search")
-    public ApiResponse<?> getRecords(@Parameter String nickname) {
+    public Map<?, ?> getRecords(@Parameter String nickname) {
         Record record = recordRepository.findByNICKNAMEAndDate(nickname, LocalDate.now());
 
         if (record == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse<>(true, null , "조회 실패")).getBody();
+            return null;
         }
 
         UserDataResponse userDataResponse = reportService.getUserData(record.getID());
@@ -135,7 +135,7 @@ public class CoreController {
         map.put("past_lose_count", pastLoseCount);
         map.put("isTodayLimit", todayGames > 31);
 
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>(true, map , "조회 성공")).getBody();
+        return map;
     }
 
 

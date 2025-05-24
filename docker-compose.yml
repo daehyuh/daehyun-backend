@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build: .
@@ -21,6 +19,8 @@ services:
     environment:
       MARIADB_ROOT_PASSWORD: 1234
       MARIADB_DATABASE: daehyun
+    ports:
+      - "3306:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
 

@@ -12,13 +12,14 @@ import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 
-@Data
+@Getter
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
@@ -40,6 +41,7 @@ public class Account {
     @JoinColumn(name = "userId", referencedColumnName = "id")
     private User user;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "account")
     private List<Record> record;
 }
