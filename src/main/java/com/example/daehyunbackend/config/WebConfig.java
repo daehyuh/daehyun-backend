@@ -22,7 +22,7 @@ public class WebConfig implements WebMvcConfigurer {
                 "https://hufsnc.com", // backend
                 "https://대현.com" // frontend
             )
-                .allowedOrigins("*")
-                .allowedMethods("*"); // 필요한 메서드 추가
+                .allowedOrigins("**") // 모든 출처 허용
+                .allowedMethods("**"); // 모든 HTTP 메서드 허용
     }
 }
