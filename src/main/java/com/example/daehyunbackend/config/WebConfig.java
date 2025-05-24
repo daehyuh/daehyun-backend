@@ -10,19 +10,10 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(final CorsRegistry registry) {
         registry
-            .addMapping("/**")
-            .allowedOrigins(
-//                // TODO 프로덕션 환경 자동 감지
-//                /* DEV */
-                "http://localhost", // backend
-                "http://localhost:5173", // frontend
-                     "https://daehyuh.dev", // frontend (React)
-                    "https://api.daehyuh.dev", // frontend (React)
-//                /* PRODUCTION */
-                "https://hufsnc.com", // backend
-                "https://대현.com" // frontend
-            )
+                .addMapping("/**")
                 .allowedOrigins("**") // 모든 출처 허용
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowCredentials(true)
                 .allowedMethods("**"); // 모든 HTTP 메서드 허용
     }
 }
