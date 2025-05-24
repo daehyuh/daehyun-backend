@@ -32,7 +32,7 @@ public class AuthController {
         String accessToken = authResponseDTO.getAccessToken();
         String refreshToken = authResponseDTO.getRefreshToken();
 
-        response.setHeader("Set-Cookie", "accessToken=" + accessToken + "; Path=/; Domain="+frontendUrl+"; SameSite=None; Secure;");
+        response.setHeader("Set-Cookie", "accessToken=" + accessToken + "; Path=/; Domain="+frontendUrl+"; httpOnly; SameSite=None; Secure;");
 //        response.addHeader("Set-Cookie", "refreshToken=" + refreshToken + "; Path=/; Domain=localhost:5173; SameSite=None; Secure;");
         // httpOnly 제외됨
         return "redirect:"+frontendUrl;
