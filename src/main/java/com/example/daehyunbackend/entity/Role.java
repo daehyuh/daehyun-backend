@@ -7,6 +7,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum Role {
     ROLE_USER("USER"),
+    ROLE_VIP("VIP"),
     ROLE_ADMIN("ADMIN");
 
     // GetValue

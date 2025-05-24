@@ -28,4 +28,7 @@ public class AccountService {
         return accountRepository.save(account).getId();
     }
 
+    public boolean existsByUser(User user) {
+        return accountRepository.existsByUser(user);
+    }
 }

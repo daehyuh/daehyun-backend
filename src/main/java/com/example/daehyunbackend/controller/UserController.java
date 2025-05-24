@@ -3,6 +3,7 @@ package com.example.daehyunbackend.controller;
 import com.example.daehyunbackend.dto.UserDto;
 import com.example.daehyunbackend.entity.Account;
 import com.example.daehyunbackend.entity.Record;
+import com.example.daehyunbackend.entity.Role;
 import com.example.daehyunbackend.entity.User;
 import com.example.daehyunbackend.repository.RecordRepository;
 import com.example.daehyunbackend.response.ReportIdResponse;
@@ -84,6 +85,14 @@ public class UserController {
     @PostMapping("/Account/sync")
     public ResponseEntity<?> AccountSync(Authentication authentication, @RequestParam String nickname, @RequestParam String code) {
         User user = userService.findById(Long.valueOf(authentication.getName()));
+
+        if (user.getRole() == Role.ROLE_USER) {
+            // 유저가 계정을 이미 동기화한 경우
+            if (accountService.existsByUser(user)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new com.example.daehyunbackend.response.ApiResponse<>(false, null, "이미 계정이 동기화되어 있습니다, 더 많은 계정을 동기화 하고싶다면 관리자에게 문의해주세요."));
+            }
+        }
 
         if (user == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
