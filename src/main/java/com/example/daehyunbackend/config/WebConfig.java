@@ -16,6 +16,7 @@ public class WebConfig implements WebMvcConfigurer {
                         "daehyun.dev",
                         "localhost:5173",
                         "localhost:8080",
+                        "api.daehyun.dev",
                         "https://api.daehyun.dev",
                         "https://daehyun.dev",
                         "https://daehyun-frontend.vercel.app/",

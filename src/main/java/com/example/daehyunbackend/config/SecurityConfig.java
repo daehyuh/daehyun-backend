@@ -57,6 +57,7 @@ public class SecurityConfig {
                         // 타임리프 템플릿 허용
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/core/ad").permitAll()
+                        .requestMatchers("/**").permitAll()
                         .requestMatchers(
                                 "/core/rank/black",
                                 "/core/rank/guild",
@@ -70,7 +71,7 @@ public class SecurityConfig {
                         .requestMatchers("/User/Account/sync").authenticated()
                         .requestMatchers("/User/profile/me").authenticated()
                         // 기타 모든 요청은 인증 필요
-                        .anyRequest().authenticated()
+//                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
