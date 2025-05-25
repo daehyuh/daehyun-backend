@@ -56,7 +56,8 @@ public class SecurityConfig {
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/login/oauth2/code/google").permitAll()
                         .requestMatchers("/logout").permitAll()
-                        .requestMatchers("/core/**/**").permitAll()
+                        .requestMatchers("/core/**").permitAll()
+                        .requestMatchers("/core/ad/**").permitAll()
                         .requestMatchers("/attach/images/**").permitAll()
                         .requestMatchers(swaggerList).permitAll()
                         // 기타 모든 요청은 인증 필요
