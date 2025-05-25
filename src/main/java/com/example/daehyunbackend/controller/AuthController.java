@@ -46,7 +46,7 @@ public class AuthController {
 
     //로그아웃 (쿠키삭제)
     @Operation(summary = "👑테스트 - 로그아웃", tags = {"Auth"})
-    @GetMapping("/logout")
+    @GetMapping("/core/logout")
     public String logout(HttpServletResponse response) {
         ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", "")
                 .path("/")
