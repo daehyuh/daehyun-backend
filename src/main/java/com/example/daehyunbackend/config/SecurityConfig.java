@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -47,6 +48,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(final HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
                 .headers(header -> header.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
@@ -54,17 +56,10 @@ public class SecurityConfig {
                         .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
                         // 타임리프 템플릿 허용
                         .requestMatchers("/").permitAll()
-                        .requestMatchers(
-                                "/",
-                                "/login/oauth2/code/google",
-                                "/logout",
-                                "/core/**",
-                                "/User/**",
-                                "/attach/images/**"
-                        ).permitAll()
+                        .requestMatchers("/User/**").authenticated()
                         .requestMatchers(swaggerList).permitAll()
                         // 기타 모든 요청은 인증 필요
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
                 .addFilterBefore(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
