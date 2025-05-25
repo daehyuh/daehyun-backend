@@ -62,7 +62,9 @@ public class SecurityConfig {
                                 "/core/rank/guild",
                                 "/core/records/search",
                                 "/core/ad",
-                                "/core/ad/**"
+                                "/core/ad/**",
+                                "/login/oauth2/code/google",
+                                "/core/logout"
                         ).permitAll()
                         .requestMatchers(swaggerList).permitAll()
                         .requestMatchers("/User/Account/sync").authenticated()
