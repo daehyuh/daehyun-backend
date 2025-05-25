@@ -58,7 +58,7 @@
                 const row = document.createElement("tr");
                 row.innerHTML = `
                     <td>${ad.id}</td>
-                    <td><img src="/attach/images/${ad.url}" alt="ad"></td>
+                    <td><img src="https://api.daehyun.dev/attach/images/${ad.url}" alt="ad"></td>
                     <td><a href="${ad.href}" target="_blank">${ad.href}</a></td>
                     <td>${ad.startDate} ~ ${ad.endDate}</td>
                     <td><button onclick="deleteAd(${ad.id})">삭제</button></td>

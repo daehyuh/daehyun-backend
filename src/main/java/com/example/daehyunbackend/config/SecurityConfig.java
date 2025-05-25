@@ -65,6 +65,7 @@ public class SecurityConfig {
                                 "/login/oauth2/code/google",
                                 "/core/logout"
                         ).permitAll()
+                        .requestMatchers("/attach/images/**").permitAll()
                         .requestMatchers(swaggerList).permitAll()
                         .requestMatchers("/User/Account/sync").authenticated()
                         .requestMatchers("/User/profile/me").authenticated()
