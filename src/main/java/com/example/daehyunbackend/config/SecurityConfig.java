@@ -60,7 +60,9 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/core/rank/black",
                                 "/core/rank/guild",
-                                "/core/records/search"
+                                "/core/records/search",
+                                "/core/ad",
+                                "/core/ad/**"
                         ).permitAll()
                         .requestMatchers(swaggerList).permitAll()
                         .requestMatchers("/User/Account/sync").authenticated()
