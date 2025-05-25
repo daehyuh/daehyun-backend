@@ -11,7 +11,14 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(final CorsRegistry registry) {
         registry
                 .addMapping("/**")
-                .allowedOrigins("https://daehyun.dev") // 프론트 도메인
+                .allowedOrigins(
+                        "https://daehyun.dev",
+                        "daehyun.dev",
+                        "localhost:5173",
+                        "localhost:8080",
+                        "https://api.daehyun.dev",
+                        "https://daehyun.dev",
+                        "http://localhost:5173")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowCredentials(true)
                 .allowedMethods("**"); // 모든 HTTP 메서드 허용
