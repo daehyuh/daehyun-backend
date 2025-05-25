@@ -48,13 +48,12 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(final HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)        // ✅ CSRF 비활성화
-                .cors(AbstractHttpConfigurer::disable)        // ✅ CORS 비활성화
+//                .cors(AbstractHttpConfigurer::disable)        // ✅ CORS 비활성화
+                .cors(Customizer.withDefaults())
                 .headers(header -> header.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        // CORS Preflight (Option) 요청 허용
-                        .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
-                        // 타임리프 템플릿 허용
+                        .requestMatchers(CorsUtils::isPreFlightRequest).permitAll() // 반드시 최상단에 위치
                         .requestMatchers("/").permitAll()
                         .requestMatchers(
                                 "/core/rank/black",
@@ -69,7 +68,6 @@ public class SecurityConfig {
                         .requestMatchers(swaggerList).permitAll()
                         .requestMatchers("/User/Account/sync").authenticated()
                         .requestMatchers("/User/profile/me").authenticated()
-                        // 기타 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
