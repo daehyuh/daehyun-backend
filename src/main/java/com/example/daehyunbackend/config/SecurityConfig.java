@@ -56,7 +56,6 @@ public class SecurityConfig {
                         .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
                         // 타임리프 템플릿 허용
                         .requestMatchers("/").permitAll()
-                        .requestMatchers("/core/ad").permitAll()
                         .requestMatchers(
                                 "/core/rank/black",
                                 "/core/rank/guild",
