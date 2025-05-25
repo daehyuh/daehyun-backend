@@ -45,4 +45,29 @@ public class AuthController {
         return "redirect:"+frontendUrl;
     }
 
+    //로그아웃 (쿠키삭제)
+    @Operation(summary = "👑테스트 - 로그아웃", tags = {"Auth"})
+    @GetMapping("/logout")
+    public String logout(HttpServletResponse response) {
+        ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", "")
+                .path("/")
+                .domain(frontendDomain)
+                .sameSite("None")
+                .secure(true)
+                .maxAge(0)
+                .build();
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", "")
+                .path("/")
+                .domain(frontendDomain)
+                .sameSite("None")
+                .secure(true)
+                .maxAge(0)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+
+        return "redirect:"+frontendUrl;
+    }
+
 }
