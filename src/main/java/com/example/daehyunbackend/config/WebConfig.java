@@ -13,14 +13,12 @@ public class WebConfig implements WebMvcConfigurer {
                 .addMapping("/**")
                 .allowedOrigins(
                         "https://daehyun.dev",
-                        "daehyun.dev",
-                        "localhost:5173",
-                        "localhost:8080",
-                        "api.daehyun.dev",
                         "https://api.daehyun.dev",
+                        "http://localhost:5173",
+                        "http://localhost:8080",
                         "https://daehyun.dev",
-                        "https://daehyun-frontend.vercel.app/",
-                        "http://localhost:5173")
+                        "https://daehyun-frontend.vercel.app/"
+                )
                 .allowedMethods("**")
                 .allowCredentials(true)
                 .allowedMethods("**"); // 모든 HTTP 메서드 허용

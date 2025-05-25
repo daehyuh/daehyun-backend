@@ -57,7 +57,6 @@ public class SecurityConfig {
                         // 타임리프 템플릿 허용
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/core/ad").permitAll()
-                        .requestMatchers("/**").permitAll()
                         .requestMatchers(
                                 "/core/rank/black",
                                 "/core/rank/guild",
