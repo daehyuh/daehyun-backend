@@ -41,6 +41,7 @@ public class SwaggerConfig {
                         .url("API license URL")))
             .servers(List.of(
                 new Server().url("http://localhost:8080").description("Local Development")
+                , new Server().url("https://api.daehyun.dev").description("Production Server")
             ));
     }
 

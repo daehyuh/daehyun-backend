@@ -56,10 +56,17 @@ public class SecurityConfig {
                         .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
                         // 타임리프 템플릿 허용
                         .requestMatchers("/").permitAll()
-                        .requestMatchers("/User/**").authenticated()
+                        .requestMatchers("/core/ad").permitAll()
+                        .requestMatchers(
+                                "/core/rank/black",
+                                "/core/rank/guild",
+                                "/core/records/search"
+                        ).permitAll()
                         .requestMatchers(swaggerList).permitAll()
+                        .requestMatchers("/User/Account/sync").authenticated()
+                        .requestMatchers("/User/profile/me").authenticated()
                         // 기타 모든 요청은 인증 필요
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

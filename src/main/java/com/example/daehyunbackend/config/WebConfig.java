@@ -18,8 +18,9 @@ public class WebConfig implements WebMvcConfigurer {
                         "localhost:8080",
                         "https://api.daehyun.dev",
                         "https://daehyun.dev",
+                        "https://daehyun-frontend.vercel.app/",
                         "http://localhost:5173")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedMethods("**")
                 .allowCredentials(true)
                 .allowedMethods("**"); // 모든 HTTP 메서드 허용
     }
