@@ -54,10 +54,10 @@ public class SecurityConfig {
                         .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
                         // 타임리프 템플릿 허용
                         .requestMatchers("/").permitAll()
-                        .requestMatchers("/core/**").permitAll()
-                        .requestMatchers("/core/ad").permitAll()
-                        .requestMatchers("/attach/images/**").permitAll()
                         .requestMatchers("/login/oauth2/code/google").permitAll()
+                        .requestMatchers("/logout").permitAll()
+                        .requestMatchers("/core/**/**").permitAll()
+                        .requestMatchers("/attach/images/**").permitAll()
                         .requestMatchers(swaggerList).permitAll()
                         // 기타 모든 요청은 인증 필요
                         .anyRequest().authenticated()

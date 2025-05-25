@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
-@RequestMapping(value = "/login/oauth2", produces = "application/json")
 public class AuthController {
 
     @Value("${frontend.url}")
@@ -29,7 +28,7 @@ public class AuthController {
     }
 
     @Operation(summary = "👑테스트 - 로그인 콜백", tags = {"Auth"})
-    @GetMapping("/code/google")
+    @GetMapping("/login/oauth2/code/google")
     public String googleLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) {
         AuthResponseDTO authResponseDTO = authService.socialLogin(code);
 

@@ -30,7 +30,7 @@ import java.util.List;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("/core/")
+@RequestMapping("/core")
 public class AdController {
     private final AdService adService;
 
