@@ -39,8 +39,8 @@ public class AuthController {
 //        response.setHeader("Set-Cookie", "accessToken=" + accessToken + "; Path=/; Domain="+frontendDomain+"; SameSite=None; Secure;"); // httpOnly 제외됨
 //        response.addHeader("Set-Cookie", "refreshToken=" + refreshToken + "; Path=/; Domain="+frontendDomain+"; SameSite=None; Secure;"); // httpOnly 제외됨
 
-        response.setHeader("Set-Cookie", "accessToken=" + accessToken + "; Path=/; Domain="+frontendDomain+"; SameSite=None; Secure;");
-        response.addHeader("Set-Cookie", "refreshToken=" + refreshToken + "; Path=/; Domain="+frontendDomain+"; SameSite=None; Secure;");
+        response.setHeader("Set-Cookie", "accessToken=" + accessToken + "; Path=/; Domain="+frontendDomain+"; Secure;");
+        response.addHeader("Set-Cookie", "refreshToken=" + refreshToken + "; Path=/; Domain="+frontendDomain+"; Secure;");
 
         return "redirect:"+frontendUrl;
     }
