@@ -36,15 +36,15 @@ public class Record {
     private int fame;
     private String introduce;
     private int frame;
-    private String current_collection;
+    private Long current_collection;
     private int current_nametag;
     private String current_skin;
     @Setter
     private int nickname_color;
-    private int current_collection2;
+    private Long current_collection2;
     private int rankpoint2;
     private String current_gem;
-    private int current_collection3;
+    private Long current_collection3;
     private int EXPERIENCE;
     private int EXPERIENCE2;
     @Setter
