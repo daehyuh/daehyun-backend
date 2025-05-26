@@ -1,12 +1,12 @@
 package com.example.daehyunbackend.service;
 
+import com.example.daehyunbackend.entity.Account;
 import com.example.daehyunbackend.entity.Record;
 import com.example.daehyunbackend.repository.RecordRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,7 +30,21 @@ public class RecordService {
     public Optional<Record> findById(Long id) {
         return recordRepository.findById(id);
     }
+
+    public Optional<Record> findByAccountAndDate(Account account, LocalDate date) {
+        return recordRepository.findByAccountAndDate(account, date);
+    }
+
     public Record save(Record record) {
         return recordRepository.save(record);
     }
+
+    public boolean existsByAccount(Account account) {
+        return recordRepository.existsByAccount(account);
+    }
+
+    public void deleteById(Long id) {
+        recordRepository.deleteById(id);
+    }
+
 }

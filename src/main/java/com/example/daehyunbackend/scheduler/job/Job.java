@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -24,28 +25,51 @@ public class Job {
     final private AccountRepository accountRepository;
 
     public void saveAllUserRecord() {
-        List<Record> Records = recordService.findAllByDate(LocalDate.now());
+        List<Account> accounts = accountRepository.findAll();
+        LocalDate localDate = LocalDate.now();
 
-        Records.forEach(record -> {
-            UserData userData = reportService.getUserData(record.getID()).getUserData();
-            record.setNickname_color(userData.getNickname_color());
+        accounts.forEach(account -> {
+            Optional<Record> record = recordService.findByAccountAndDate(account, localDate);
+            UserDataResponse userDataResponse = reportService.getUserData(account.getAccountId());
+            UserData userData = userDataResponse.getUserData();
+
+            if (record.isPresent()) {
+                Record record1 = record.get();
+                record1.setDate(localDate);
+            } else {
+                Record record1 = Record.fromEntity(userData);
+                record1.setAccount(account);
+                record1.setDate(localDate);
+                recordService.save(record1);
+            }
+
         });
 
-        recordService.saveAll(Records);
     }
 
     public void saveAllUserRecordByDate() {
+        List<Account> accounts = accountRepository.findAll();
+        LocalDate localDate = LocalDate.now();
 
-        List<Account> Accounts = accountRepository.findAll();
+        accounts.forEach(account -> {
+            Optional<Record> record = recordService.findByAccountAndDate(account, localDate);
+            UserDataResponse userDataResponse = reportService.getUserData(account.getAccountId());
+            UserData userData = userDataResponse.getUserData();
 
-        Accounts.forEach(account -> {
-            UserData userData = reportService.getUserData(account.getAccountId()).getUserData();
-            Record record = Record.fromEntity(userData);
-            record.setAccount(account);
-            recordService.save(record);
+            if (record.isPresent()) {
+                Record record1 = record.get();
+                record1.setDate(localDate);
+            } else {
+                Record record1 = Record.fromEntity(userData);
+                record1.setAccount(account);
+                record1.setDate(localDate);
+                recordService.save(record1);
+            }
         });
+
+
     }
 
 
-
 }
+

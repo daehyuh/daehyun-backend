@@ -65,6 +65,7 @@ public class Record {
     @JoinColumn(name = "AcoountId", referencedColumnName = "id")
     private Account account;
 
+    @Setter
     private LocalDate date;
 
 
