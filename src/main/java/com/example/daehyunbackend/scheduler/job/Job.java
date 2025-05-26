@@ -32,15 +32,17 @@ public class Job {
             Optional<Record> record = recordService.findByAccountAndDate(account, localDate);
             UserDataResponse userDataResponse = reportService.getUserData(account.getAccountId());
             UserData userData = userDataResponse.getUserData();
-
+            System.out.println("account = " + account.getAccountId() + ", userData = " + userData);
             if (record.isPresent()) {
                 Record record1 = record.get();
                 record1.setDate(localDate);
+                System.out.println("record1 = " + record1);
             } else {
                 Record record1 = Record.fromEntity(userData);
                 record1.setAccount(account);
                 record1.setDate(localDate);
                 recordService.save(record1);
+                System.out.println("record1 = " + record1);
             }
 
         });
