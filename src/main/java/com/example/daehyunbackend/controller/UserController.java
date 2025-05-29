@@ -186,5 +186,21 @@ public class UserController {
                 .body(new com.example.daehyunbackend.response.ApiResponse<>(true, null, "계정 동기화 성공"));
     }
 
+    @Operation(summary = "유저 수동 하루 동기화", tags = {"User"})
+    @PostMapping("/Account/syncAllDay")
+    public ResponseEntity<?> syncAllDay(Authentication authentication) {
+        // admin 권한을 가진 유저만 접근할 수 있습니다.
+        User user = userService.findById(Long.parseLong(authentication.getName()));
+        if (user.getRole() != Role.ROLE_ADMIN) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new com.example.daehyunbackend.response.ApiResponse<>(false, null, "권한이 없습니다."));
+        }
+
+        job.saveAllUserRecordByDate();
+        // 스케줄러를 통해 모든 유저의 기록을 동기화합니다.
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new com.example.daehyunbackend.response.ApiResponse<>(true, null, "계정 동기화 성공"));
+    }
+
 
 }

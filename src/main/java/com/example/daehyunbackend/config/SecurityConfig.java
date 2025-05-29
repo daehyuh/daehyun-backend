@@ -69,6 +69,7 @@ public class SecurityConfig {
                         .requestMatchers(swaggerList).permitAll()
                         .requestMatchers("/User/Account/sync").authenticated()
                         .requestMatchers("/User/Account/syncAll").authenticated()
+                        .requestMatchers("/User/Account/syncAllDay").authenticated()
                         .requestMatchers("/User/profile/me").authenticated()
                         .anyRequest().authenticated()
                 )
