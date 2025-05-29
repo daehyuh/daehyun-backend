@@ -38,7 +38,7 @@ public class Job {
                 System.out.println(userData.getNICKNAME() + userData.getNickname_color());
                 Record record1 = record.get();
                 record1.setDate(localDate);
-                recordService.save(record1);
+//                recordService.save(record1);
                 System.out.println("record1 = " + record1);
             } else {
                 System.out.println(userData.getNICKNAME() + userData.getNickname_color() + "to" + record.get().getNickname_color());

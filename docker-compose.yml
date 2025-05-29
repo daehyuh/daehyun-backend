@@ -12,7 +12,7 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: 1234
       IMAGE_UPLOAD_DIR: /upload/images  # Spring에서 사용할 업로드 디렉토리
-
+      TZ: Asia/Seoul
   db:
     image: mariadb:10.6
     restart: always
