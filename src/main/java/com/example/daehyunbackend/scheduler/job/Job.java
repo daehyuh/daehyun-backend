@@ -28,6 +28,7 @@ public class Job {
         List<Account> accounts = accountRepository.findAll();
         LocalDate localDate = LocalDate.now();
         System.out.println("localDate = " + localDate);
+
         accounts.forEach(account -> {
             Optional<Record> record = recordService.findByAccountAndDate(account, localDate);
             UserDataResponse userDataResponse = reportService.getUserData(account.getAccountId());
@@ -37,6 +38,7 @@ public class Job {
                 System.out.println(userData.getNICKNAME() + userData.getNickname_color());
                 Record record1 = record.get();
                 record1.setDate(localDate);
+                recordService.save(record1);
                 System.out.println("record1 = " + record1);
             } else {
                 System.out.println(userData.getNICKNAME() + userData.getNickname_color() + "to" + record.get().getNickname_color());
