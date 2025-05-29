@@ -171,7 +171,7 @@ public class UserController {
 
 
     @Operation(summary = "유저 수동 동기화", tags = {"User"})
-    @PostMapping("/Account/syncAll}")
+    @PostMapping("/Account/syncAll")
     public ResponseEntity<?> AccountSyncAll(Authentication authentication) {
         // admin 권한을 가진 유저만 접근할 수 있습니다.
         User user = userService.findById(Long.parseLong(authentication.getName()));

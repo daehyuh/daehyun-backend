@@ -68,7 +68,7 @@ public class SecurityConfig {
                         .requestMatchers("/attach/images/**").permitAll()
                         .requestMatchers(swaggerList).permitAll()
                         .requestMatchers("/User/Account/sync").authenticated()
-                        .requestMatchers("Account/syncAll").authenticated()
+                        .requestMatchers("/User/Account/syncAll").authenticated()
                         .requestMatchers("/User/profile/me").authenticated()
                         .anyRequest().authenticated()
                 )
