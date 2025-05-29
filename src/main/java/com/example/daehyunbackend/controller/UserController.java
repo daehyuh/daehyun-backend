@@ -10,6 +10,8 @@ import com.example.daehyunbackend.response.ReportIdResponse;
 import com.example.daehyunbackend.response.ReportResponse;
 import com.example.daehyunbackend.response.UserData;
 import com.example.daehyunbackend.response.UserDataResponse;
+import com.example.daehyunbackend.scheduler.Scheduler;
+import com.example.daehyunbackend.scheduler.job.Job;
 import com.example.daehyunbackend.service.AccountService;
 import com.example.daehyunbackend.service.ReportService;
 import com.example.daehyunbackend.service.UserService;
@@ -42,6 +44,7 @@ public class UserController {
     private final UserService userService;
     private final AccountService accountService;
     private final RecordRepository recordRepository;
+    private final Job job;
 
     @Operation(summary = "유저 리스트 반환", tags = {"User"})
     @GetMapping("/Users")
@@ -165,4 +168,23 @@ public class UserController {
                 .body(new com.example.daehyunbackend.response.ApiResponse<>(true, recordRepository.save(record), "계정 동기화 성공"));
 
     }
+
+
+    @Operation(summary = "유저 수동 동기화", tags = {"User"})
+    @PostMapping("/Account/syncAll}")
+    public ResponseEntity<?> AccountSyncAll(Authentication authentication) {
+        // admin 권한을 가진 유저만 접근할 수 있습니다.
+        User user = userService.findById(Long.parseLong(authentication.getName()));
+        if (user.getRole() != Role.ROLE_ADMIN) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new com.example.daehyunbackend.response.ApiResponse<>(false, null, "권한이 없습니다."));
+        }
+
+        job.saveAllUserRecord();
+        // 스케줄러를 통해 모든 유저의 기록을 동기화합니다.
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new com.example.daehyunbackend.response.ApiResponse<>(true, null, "계정 동기화 성공"));
+    }
+
+
 }

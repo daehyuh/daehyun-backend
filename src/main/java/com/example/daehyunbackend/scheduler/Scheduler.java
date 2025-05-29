@@ -12,7 +12,7 @@ public class Scheduler {
     private final Job job;
 
      @Scheduled(cron = "0 * * * * *")
-     public void schedule10min() {
+     public synchronized  void schedule10min() {
             job.saveAllUserRecord();
      }
 
