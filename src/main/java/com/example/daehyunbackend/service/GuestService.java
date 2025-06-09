@@ -92,9 +92,7 @@ public class GuestService {
             for (CommentData commentData : CommentDatas) {
                 if (guest.getNickName().equals(commentData.getNickname())) {
 
-                    if (guest.getCode().equals(commentData.getComment_content())){
-
-                        guest.setAccountId(commentData.getUser_id());
+                    if (commentData.getComment_content().contains(guest.getCode())) {
                         guestRepository.save(guest);
                         System.out.println("저장");
 
