@@ -3,6 +3,7 @@ package com.example.daehyunbackend.controller;
 import com.example.daehyunbackend.dto.GuestDto;
 import com.example.daehyunbackend.dto.UserDto;
 import com.example.daehyunbackend.entity.Account;
+import com.example.daehyunbackend.entity.Guest;
 import com.example.daehyunbackend.entity.Record;
 import com.example.daehyunbackend.entity.Role;
 import com.example.daehyunbackend.entity.User;
@@ -209,8 +210,8 @@ public class UserController {
     @Operation(summary = "게스트 유저 추가", tags = {"Guest"})
     @PostMapping("/Account/addGuest")
     public ResponseEntity<?> addGuest(@RequestParam String nickname, Authentication authentication) {
-        guestService.saveGuest(nickname, Long.parseLong(authentication.getName()));
-        return ResponseEntity.status(HttpStatus.OK).body(null);
+        Guest guest = guestService.saveGuest(nickname, Long.parseLong(authentication.getName()));
+        return ResponseEntity.status(HttpStatus.OK).body(guest.getCode() + "를 Team42 최후의반론 공지 댓글에 적어주세요.");
     }
 
     @Operation(summary = "게스트 유저 동기화", tags = {"Guest"})

@@ -30,7 +30,7 @@ public class GuestService {
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
 
-    public void saveGuest(String nickname, Long userId) {
+    public Guest saveGuest(String nickname, Long userId) {
         Optional<User> user = userRepository.findById(userId);
         List<Guest> existingGuests = guestRepository.findByNickName(nickname);
         if (!existingGuests.isEmpty()) {
@@ -40,7 +40,7 @@ public class GuestService {
                     continue; // 이미 accountId가 있는 경우는 건너뜀
                 }
                 existingGuest.setCode(newCode);
-                guestRepository.save(existingGuest);
+                return guestRepository.save(existingGuest);
             }
         } else {
             Guest guest = new Guest();
@@ -49,7 +49,7 @@ public class GuestService {
             guest.setCreatedAt(LocalDateTime.now());
             String code = String.format("%04d", (int) (Math.random() * 10000));
             guest.setCode(code);
-            guestRepository.save(guest);
+            return guestRepository.save(guest);
         }
     }
 
