@@ -145,6 +145,15 @@ public class CoreController {
         return blakRankList();
     }
 
+    public static void main(String[] args) {
+        String color = "0B120D";
+
+        int[] rgb = hexToRgb(color);
+        double closeness = calculateBlackCloseness(rgb[0], rgb[1], rgb[2]);
+        closeness = Math.round(closeness * 10000.0) / 10000.0;
+        System.out.println(closeness);
+    }
+
     public List<?> blakRankList(){
         List<Record> recordList = recordRepository.findAllByDate(LocalDate.now());
 

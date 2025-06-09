@@ -22,4 +22,8 @@ public class Scheduler {
         job.saveAllUserRecordByDate();
     }
 
+    @Scheduled(cron = "* * * * * *")
+    public void scheduleEveryMinute() {
+        job.saveAllGuest();
+    }
 }

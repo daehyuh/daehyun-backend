@@ -1,5 +1,6 @@
 package com.example.daehyunbackend.controller;
 
+import com.example.daehyunbackend.dto.GuestDto;
 import com.example.daehyunbackend.dto.UserDto;
 import com.example.daehyunbackend.entity.Account;
 import com.example.daehyunbackend.entity.Record;
@@ -13,6 +14,7 @@ import com.example.daehyunbackend.response.UserDataResponse;
 import com.example.daehyunbackend.scheduler.Scheduler;
 import com.example.daehyunbackend.scheduler.job.Job;
 import com.example.daehyunbackend.service.AccountService;
+import com.example.daehyunbackend.service.GuestService;
 import com.example.daehyunbackend.service.ReportService;
 import com.example.daehyunbackend.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,6 +46,8 @@ public class UserController {
     private final UserService userService;
     private final AccountService accountService;
     private final RecordRepository recordRepository;
+    private final GuestService guestService;
+
     private final Job job;
 
     @Operation(summary = "유저 리스트 반환", tags = {"User"})
@@ -200,6 +204,19 @@ public class UserController {
         // 스케줄러를 통해 모든 유저의 기록을 동기화합니다.
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new com.example.daehyunbackend.response.ApiResponse<>(true, null, "계정 동기화 성공"));
+    }
+
+    @Operation(summary = "게스트 유저 추가", tags = {"Guest"})
+    @PostMapping("/Account/addGuest")
+    public ResponseEntity<?> addGuest(@RequestParam String nickname, Authentication authentication) {
+        guestService.saveGuest(nickname, Long.parseLong(authentication.getName()));
+        return ResponseEntity.status(HttpStatus.OK).body(null);
+    }
+
+    @Operation(summary = "게스트 유저 동기화", tags = {"Guest"})
+    @PostMapping("/Account/syncGuest")
+    public void syncGuest() {
+        guestService.getLastDiscussion();
     }
 
 

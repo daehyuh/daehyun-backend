@@ -3,8 +3,10 @@ package com.example.daehyunbackend.scheduler.job;
 import com.example.daehyunbackend.entity.Account;
 import com.example.daehyunbackend.entity.Record;
 import com.example.daehyunbackend.repository.AccountRepository;
+import com.example.daehyunbackend.repository.RecordRepository;
 import com.example.daehyunbackend.response.UserData;
 import com.example.daehyunbackend.response.UserDataResponse;
+import com.example.daehyunbackend.service.GuestService;
 import com.example.daehyunbackend.service.RecordService;
 import com.example.daehyunbackend.service.ReportService;
 import com.example.daehyunbackend.service.UserService;
@@ -23,6 +25,7 @@ public class Job {
     final private RecordService recordService;
     final private ReportService reportService;
     final private AccountRepository accountRepository;
+    final private GuestService guestService;
 
     public void saveAllUserRecord() {
         List<Account> accounts = accountRepository.findAll();
@@ -69,10 +72,11 @@ public class Job {
                 recordService.save(record1);
             }
         });
-
-
     }
 
+    public void saveAllGuest() {
+        guestService.getLastDiscussion();
+    }
 
 }
 

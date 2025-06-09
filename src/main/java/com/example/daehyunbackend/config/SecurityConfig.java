@@ -59,11 +59,12 @@ public class SecurityConfig {
                                 "/core/rank/black",
                                 "/core/rank/guild",
                                 "/core/records/search",
-                                "core/getChannel",
+                                "/core/getChannel",
                                 "/core/ad",
                                 "/core/ad/**",
                                 "/login/oauth2/code/google",
-                                "/core/logout"
+                                "/core/logout",
+                                "User/Account/syncGuest"
                         ).permitAll()
                         .requestMatchers("/attach/images/**").permitAll()
                         .requestMatchers(swaggerList).permitAll()
@@ -71,6 +72,7 @@ public class SecurityConfig {
                         .requestMatchers("/User/Account/syncAll").authenticated()
                         .requestMatchers("/User/Account/syncAllDay").authenticated()
                         .requestMatchers("/User/profile/me").authenticated()
+                        .requestMatchers("/Account/addGuest").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
