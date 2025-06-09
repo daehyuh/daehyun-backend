@@ -51,7 +51,9 @@ public class GuestService {
             guest.setCode(code);
             return guestRepository.save(guest);
         }
+        return null;
     }
+
 
     public void getLastDiscussion() {
         LocalDateTime now = LocalDateTime.now();

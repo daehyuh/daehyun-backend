@@ -211,7 +211,7 @@ public class UserController {
     @PostMapping("/Account/addGuest")
     public ResponseEntity<?> addGuest(@RequestParam String nickname, Authentication authentication) {
         Guest guest = guestService.saveGuest(nickname, Long.parseLong(authentication.getName()));
-        return ResponseEntity.status(HttpStatus.OK).body(guest.getCode());
+        return ResponseEntity.status(HttpStatus.OK).body(new com.example.daehyunbackend.response.ApiResponse<>(true, guest.getCode(), "계정 동기화 성공"));
     }
 
     @Operation(summary = "게스트 유저 동기화", tags = {"Guest"})
