@@ -39,6 +39,7 @@ public class User {
     @Setter
     private String email;
     @Setter
+    @Column(length = 5000)
     private String avatarUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
