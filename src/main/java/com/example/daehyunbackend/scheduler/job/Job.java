@@ -11,12 +11,14 @@ import com.example.daehyunbackend.service.RecordService;
 import com.example.daehyunbackend.service.ReportService;
 import com.example.daehyunbackend.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class Job {
@@ -42,6 +44,7 @@ public class Job {
                 record1.setNickname_color(userData.getNickname_color());
                 record1.setGuild_initial_background_color(userData.getGuild_initial_background_color());
                 record1.setDate(localDate);
+                recordService.save(record1);
                 System.out.println("record1 = " + record1);
             } else {
                 Record record1 = Record.fromEntity(userData);
