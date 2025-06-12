@@ -56,6 +56,7 @@ public class Record {
     private int guild_level;
     private String guild_initial;
     private int guild_initial_color;
+    @Setter
     private int guild_initial_background_color;
     private String gem;
 

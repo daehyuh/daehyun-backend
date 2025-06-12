@@ -39,6 +39,8 @@ public class Job {
             if (record.isPresent()) {
                 System.out.println(userData.getNICKNAME() + userData.getNickname_color());
                 Record record1 = record.get();
+                record1.setNickname_color(userData.getNickname_color());
+                record1.setGuild_initial_background_color(userData.getGuild_initial_background_color());
                 record1.setDate(localDate);
                 System.out.println("record1 = " + record1);
             } else {
