@@ -16,6 +16,7 @@ import com.example.daehyunbackend.scheduler.Scheduler;
 import com.example.daehyunbackend.scheduler.job.Job;
 import com.example.daehyunbackend.service.AccountService;
 import com.example.daehyunbackend.service.GuestService;
+import com.example.daehyunbackend.service.RecordService;
 import com.example.daehyunbackend.service.ReportService;
 import com.example.daehyunbackend.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @RestController
 @AllArgsConstructor
@@ -50,6 +52,7 @@ public class UserController {
     private final GuestService guestService;
 
     private final Job job;
+    private final RecordService recordService;
 
     @Operation(summary = "유저 리스트 반환", tags = {"User"})
     @GetMapping("/Users")
@@ -220,5 +223,36 @@ public class UserController {
         guestService.getLastDiscussion();
     }
 
+
+    @Operation(summary = "한명 동기화", tags = {"Guest"})
+    @PostMapping("/Account/syncGuest/{id}")
+    public ResponseEntity<?> syncGuest(@PathVariable Long id) {
+
+        Account account = accountService.findById(id);
+
+        LocalDate localDate = LocalDate.now();
+        Optional<Record> record = recordService.findByAccountAndDate(account, localDate);
+        UserDataResponse userDataResponse = reportService.getUserData(account.getAccountId());
+        UserData userData = userDataResponse.getUserData();
+        System.out.println("account = " + account.getAccountId() + ", userData = " + userData);
+        if (record.isPresent()) {
+            System.out.println(userData.getNICKNAME() + userData.getNickname_color());
+            Record record1 = record.get();
+            record1.setNickname_color(userData.getNickname_color());
+            record1.setGuild_initial_background_color(userData.getGuild_initial_background_color());
+            record1.setDate(localDate);
+            recordService.save(record1);
+            System.out.println("record1 = " + record1);
+        } else {
+            Record record1 = Record.fromEntity(userData);
+            record1.setAccount(account);
+            record1.setDate(localDate);
+            recordService.save(record1);
+            System.out.println("record2 = " + record1);
+        }
+
+
+        return null;
+    }
 
 }

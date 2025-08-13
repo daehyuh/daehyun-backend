@@ -11,8 +11,8 @@ public class Scheduler {
 
     private final Job job;
 
-     @Scheduled(cron = "0 * * * * *")
-     public synchronized  void schedule10min() {
+     @Scheduled(cron = "0 */15 * * * *")
+     public void schedule15min() {
             job.saveAllUserRecord();
      }
 
