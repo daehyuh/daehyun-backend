@@ -225,7 +225,7 @@ public class UserController {
 
 
     @Operation(summary = "한명 동기화", tags = {"Guest"})
-    @PostMapping("/Account/syncGuest/{id}")
+    @PostMapping("/Account/syncOneGuest/{id}")
     public ResponseEntity<?> syncGuest(@PathVariable Long id) {
 
         Account account = accountService.findById(id);
