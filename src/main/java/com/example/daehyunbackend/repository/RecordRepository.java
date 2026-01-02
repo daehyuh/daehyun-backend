@@ -17,4 +17,5 @@ public interface RecordRepository extends JpaRepository<Record, Long> {
     boolean existsByAccount(Account account);
     Record findByNICKNAMEAndDate(String nickname, LocalDate date);
     Optional<Record> findByAccountAndDate(Account account, LocalDate date);
+    Optional<Record> findTopByAccountOrderByDateDesc(Account account);
 }

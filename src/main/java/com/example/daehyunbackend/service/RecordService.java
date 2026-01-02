@@ -35,6 +35,10 @@ public class RecordService {
         return recordRepository.findByAccountAndDate(account, date);
     }
 
+    public Optional<Record> findLatestByAccount(Account account) {
+        return recordRepository.findTopByAccountOrderByDateDesc(account);
+    }
+
     public Record save(Record record) {
         return recordRepository.save(record);
     }

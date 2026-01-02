@@ -31,4 +31,8 @@ public class AccountService {
     public boolean existsByUser(User user) {
         return accountRepository.existsByUser(user);
     }
+
+    public List<Account> findAllByUser(User user) {
+        return accountRepository.findAllByUser(user);
+    }
 }

@@ -12,6 +12,7 @@ import com.example.daehyunbackend.response.ReportIdResponse;
 import com.example.daehyunbackend.response.ReportResponse;
 import com.example.daehyunbackend.response.UserData;
 import com.example.daehyunbackend.response.UserDataResponse;
+import com.example.daehyunbackend.response.UserProfileResponse;
 import com.example.daehyunbackend.scheduler.Scheduler;
 import com.example.daehyunbackend.scheduler.job.Job;
 import com.example.daehyunbackend.service.AccountService;
@@ -38,6 +39,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -69,7 +73,40 @@ public class UserController {
     @Operation(summary = "본인 정보 조회 ", tags = {"User"})
     @GetMapping("/profile/me")
     public ResponseEntity<?> getMe(Authentication authentication) {
-        return ResponseEntity.status(HttpStatus.OK).body(UserDto.fromEntity(userService.findById(Long.parseLong(authentication.getName()))));
+        User user = userService.findById(Long.parseLong(authentication.getName()));
+        List<Account> accounts = accountService.findAllByUser(user);
+
+        Record latestRecord = findLatestRecord(accounts);
+
+        LocalDate today = LocalDate.now();
+        List<Record> todayRecords = recordService.findAllByDate(today);
+
+        String nicknameColor = latestRecord != null ? intToHexColor(latestRecord.getNickname_color()) : null;
+        String guildBackgroundColor = latestRecord != null ? intToHexColor(latestRecord.getGuild_initial_background_color()) : null;
+
+        Integer nicknameRank = latestRecord != null
+                ? calculateColorRank(latestRecord.getNickname_color(), todayRecords)
+                : null;
+        Integer guildBackgroundRank = latestRecord != null
+                ? calculateGuildBackgroundRank(latestRecord, todayRecords)
+                : null;
+
+        TodayStats todayStats = calculateTodayStats(latestRecord);
+
+        UserProfileResponse response = UserProfileResponse.builder()
+                .user(UserDto.fromEntity(user))
+                .record(latestRecord)
+                .nicknameColor(nicknameColor)
+                .nicknameRank(nicknameRank)
+                .guildBackgroundColor(guildBackgroundColor)
+                .guildBackgroundRank(guildBackgroundRank)
+                .todayWinCount(todayStats != null ? todayStats.todayWin : null)
+                .todayLoseCount(todayStats != null ? todayStats.todayLose : null)
+                .todayTotalCount(todayStats != null ? todayStats.todayTotal : null)
+                .todayLimitExceeded(todayStats != null ? todayStats.limitExceeded : null)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @Operation(summary = "유저 정보 조회 - ✅전체 접근, 접근 유저 ID 필요", tags = {"User"})
@@ -253,6 +290,121 @@ public class UserController {
 
 
         return null;
+    }
+
+    private Record findLatestRecord(List<Account> accounts) {
+        if (accounts == null || accounts.isEmpty()) {
+            return null;
+        }
+
+        LocalDate today = LocalDate.now();
+        Record latest = null;
+
+        for (Account account : accounts) {
+            Optional<Record> todayRecord = recordService.findByAccountAndDate(account, today);
+            if (todayRecord.isPresent()) {
+                return todayRecord.get();
+            }
+
+            Optional<Record> recent = recordService.findLatestByAccount(account);
+            if (recent.isPresent()) {
+                Record candidate = recent.get();
+                if (latest == null || (candidate.getDate() != null && candidate.getDate().isAfter(latest.getDate()))) {
+                    latest = candidate;
+                }
+            }
+        }
+
+        return latest;
+    }
+
+    private Integer calculateColorRank(int targetColor, List<Record> todayRecords) {
+        double targetCloseness = calculateBlackCloseness(targetColor);
+        long higherCount = todayRecords.stream()
+                .map(record -> calculateBlackCloseness(record.getNickname_color()))
+                .filter(closeness -> closeness > targetCloseness)
+                .count();
+        return (int) higherCount + 1;
+    }
+
+    private Integer calculateGuildBackgroundRank(Record targetRecord, List<Record> todayRecords) {
+        if (targetRecord.getGuild_name() == null || targetRecord.getGuild_name().isEmpty()) {
+            return null;
+        }
+
+        double targetCloseness = calculateBlackCloseness(targetRecord.getGuild_initial_background_color());
+        Map<String, Double> guildCloseness = new HashMap<>();
+
+        for (Record record : todayRecords) {
+            String guildName = record.getGuild_name();
+            if (guildName == null || guildName.isEmpty()) continue;
+
+            guildCloseness.putIfAbsent(guildName, calculateBlackCloseness(record.getGuild_initial_background_color()));
+        }
+
+        long higherCount = guildCloseness.values().stream()
+                .filter(closeness -> closeness > targetCloseness)
+                .count();
+        return (int) higherCount + 1;
+    }
+
+    private TodayStats calculateTodayStats(Record record) {
+        if (record == null || record.getAccount() == null) {
+            return null;
+        }
+
+        try {
+            Long accountId = record.getAccount().getAccountId();
+            UserDataResponse userDataResponse = reportService.getUserData(accountId);
+            if (userDataResponse == null || userDataResponse.getUserData() == null) {
+                return null;
+            }
+
+            UserData current = userDataResponse.getUserData();
+            int todayWin = Math.max(0, current.getWin_count() - record.getWin_count());
+            int todayLose = Math.max(0, current.getLose_count() - record.getLose_count());
+            int todayTotal = todayWin + todayLose;
+            boolean limitExceeded = todayTotal > 31;
+
+            return new TodayStats(todayWin, todayLose, todayTotal, limitExceeded);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static double calculateBlackCloseness(int color) {
+        int r = (color >> 16) & 0xFF;
+        int g = (color >> 8) & 0xFF;
+        int b = color & 0xFF;
+
+        double distance = Math.sqrt(r * r + g * g + b * b);
+        double closeness = 100.0 * (1.0 - (distance / 441.673));
+        return Math.round(closeness * 10000.0) / 10000.0;
+    }
+
+    private static String intToHexColor(int color) {
+        long unsigned = color & 0xFFFFFFFFL;
+        String hex = Long.toHexString(unsigned).toUpperCase();
+        if (hex.length() > 6) {
+            hex = hex.substring(hex.length() - 6);
+        } else {
+            hex = String.format("%06X", unsigned);
+        }
+        return hex;
+    }
+
+    private static class TodayStats {
+        private final int todayWin;
+        private final int todayLose;
+        private final int todayTotal;
+        private final boolean limitExceeded;
+
+        private TodayStats(int todayWin, int todayLose, int todayTotal, boolean limitExceeded) {
+            this.todayWin = todayWin;
+            this.todayLose = todayLose;
+            this.todayTotal = todayTotal;
+            this.limitExceeded = limitExceeded;
+        }
     }
 
 }
