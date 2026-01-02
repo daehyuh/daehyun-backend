@@ -90,7 +90,8 @@ public class SecurityConfig {
 
         config.setAllowedOrigins(List.of(
                 "https://xn--vk1b177d.com",
-                "http://localhost:5173"
+                "http://localhost:5173",
+                "https://api.xn--vk1b177d.com"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
