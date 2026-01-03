@@ -5,6 +5,7 @@ import com.example.daehyunbackend.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -16,4 +17,6 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     Account findByAccountId(Long accountId);
 
     List<Account> findAllByUser(User user);
+
+    long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 }

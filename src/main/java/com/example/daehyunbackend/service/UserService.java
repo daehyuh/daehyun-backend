@@ -8,6 +8,8 @@ import com.example.daehyunbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -36,6 +38,13 @@ public class UserService {
 
     public Long count() {
         return userRepository.count();
+    }
+
+    public Long countToday() {
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
+        return userRepository.countByCreatedAtBetween(startOfDay, endOfDay);
     }
 
 }
