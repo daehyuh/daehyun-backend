@@ -60,7 +60,7 @@ During deployment, GitHub Actions:
 
 `PROD_APP_DIR` inside `DEPLOY_ENV_FILE` must point to the repository directory on the production server.
 
-`PROD_SSH_PRIVATE_KEY` must be the private key file contents. Do not use the public key from `authorized_keys`; public keys start with `ssh-rsa` or `ssh-ed25519` and cannot authenticate the deploy job.
+`PROD_SSH_PRIVATE_KEY` must be the private key file contents without indentation. Do not use the public key from `authorized_keys`; public keys start with `ssh-rsa` or `ssh-ed25519` and cannot authenticate the deploy job.
 
 Example:
 
