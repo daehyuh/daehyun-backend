@@ -66,6 +66,8 @@ public class TribunalReplayScraper {
                 throw new IllegalArgumentException("리플레이 채팅 데이터를 찾을 수 없습니다.");
             }
 
+            List<ReplayPlayerData> players = parsePlayers(document);
+
             return new ReplayParseResult(
                     address.roomId(),
                     address.lang(),
@@ -73,6 +75,7 @@ public class TribunalReplayScraper {
                     text(document.selectFirst(".game-type-title")),
                     parseGameDuration(document),
                     LocalDateTime.now(),
+                    players,
                     messages
             );
         } catch (IllegalArgumentException e) {
@@ -170,6 +173,33 @@ public class TribunalReplayScraper {
         return messages;
     }
 
+    private List<ReplayPlayerData> parsePlayers(Document document) {
+        List<ReplayPlayerData> players = new ArrayList<>();
+        Elements items = document.select("#user-table .item");
+
+        int order = 1;
+        for (Element item : items) {
+            String nickname = text(item.selectFirst(".nick-name"));
+            String jobImageUrl = attr(item.selectFirst(".job-icon-img"), "src");
+            String frameImageUrl = attr(item.selectFirst(".frame-img"), "src");
+            String jobCode = extractJobCode(jobImageUrl);
+
+            if (isBlank(nickname) || isBlank(jobCode)) {
+                continue;
+            }
+
+            players.add(new ReplayPlayerData(
+                    order++,
+                    nickname,
+                    jobCode,
+                    jobImageUrl,
+                    frameImageUrl
+            ));
+        }
+
+        return players;
+    }
+
     private String parseGameDuration(Document document) {
         for (Element info : document.select(".game-info")) {
             String text = text(info);
@@ -246,7 +276,17 @@ public class TribunalReplayScraper {
             String gameType,
             String gameDuration,
             LocalDateTime fetchedAt,
+            List<ReplayPlayerData> players,
             List<ReplayMessageData> messages
+    ) {
+    }
+
+    public record ReplayPlayerData(
+            int order,
+            String nickname,
+            String jobCode,
+            String jobImageUrl,
+            String frameImageUrl
     ) {
     }
 
