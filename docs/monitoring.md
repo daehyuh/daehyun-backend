@@ -14,14 +14,14 @@ Prometheus collects metrics. Grafana displays them. `node-exporter` exposes VM m
 
 ## First-Time Setup
 
-Create the monitoring environment file on the production server:
+Monitoring uses the same production environment file as the app:
 
 ```bash
-cp deploy/.env.monitoring.example deploy/.env.monitoring
-vi deploy/.env.monitoring
+cp .env.example .env
+vi .env
 ```
 
-For CI/CD deployments, store the full file contents in the GitHub Actions secret `MONITORING_ENV_FILE`. The workflow writes it to `deploy/.env.monitoring` on the server before running deployment scripts.
+For CI/CD deployments, store the full file contents in the GitHub Actions secret `DEPLOY_ENV_FILE`. The workflow writes the non-SSH values to `deploy/.env.production` on the server before running deployment scripts.
 
 The minimal file only needs:
 
@@ -85,7 +85,7 @@ This prevents Docker container logs from growing without a limit.
 
 Existing containers need to be recreated before the new logging policy applies.
 
-Override these values in `deploy/.env.monitoring` only if the defaults are not enough.
+Override these values in `DEPLOY_ENV_FILE` only if the defaults are not enough.
 
 ## Alerts
 

@@ -92,40 +92,65 @@ jobs:
     steps:
       - name: Validate deployment configuration
         env:
-          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
-          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
-          PROD_SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
-          PROD_APP_DIR: ${{ secrets.PROD_APP_DIR }}
-          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
+          DEPLOY_ENV_FILE: ${{ secrets.DEPLOY_ENV_FILE }}
+          APP_IMAGE: ${{ needs.build.outputs.image }}
+          APP_IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
         run: |
+          test -n "$DEPLOY_ENV_FILE"
+          mkdir -p .deploy-env
+          printf '%s\n' "$DEPLOY_ENV_FILE" > .deploy-env/.env
+          sed -i 's/\r$//' .deploy-env/.env
+
+          set -a
+          . .deploy-env/.env
+          set +a
+
           test -n "$PROD_SSH_HOST"
           test -n "$PROD_SSH_USER"
-          test -n "$PROD_SSH_PRIVATE_KEY"
           test -n "$PROD_APP_DIR"
-          test -n "$PROD_ENV_FILE"
+          test -n "$SPRING_DATASOURCE_PASSWORD"
+          test -n "$MARIADB_ROOT_PASSWORD"
+
+          if [ -z "${PROD_SSH_PRIVATE_KEY_B64:-}" ] && [ -z "${PROD_SSH_PRIVATE_KEY:-}" ]; then
+            echo "Set PROD_SSH_PRIVATE_KEY_B64 in DEPLOY_ENV_FILE." >&2
+            exit 1
+          fi
+
+          if [ "${ENABLE_MONITORING:-false}" = "true" ]; then
+            test -n "$GRAFANA_ADMIN_PASSWORD"
+          fi
+
+          if [ -n "${PROD_SSH_PRIVATE_KEY_B64:-}" ]; then
+            printf '%s' "$PROD_SSH_PRIVATE_KEY_B64" | base64 -d > .deploy-env/prod_key
+          else
+            printf '%s\n' "$PROD_SSH_PRIVATE_KEY" > .deploy-env/prod_key
+          fi
+          chmod 600 .deploy-env/prod_key
+
+          grep -Ev '^(PROD_SSH_|PROD_APP_DIR=|DEPLOY_ENV_FILE=)' .deploy-env/.env > .deploy-env/.env.production
+          {
+            printf 'APP_IMAGE=%s\n' "$APP_IMAGE"
+            printf 'APP_IMAGE_TAG=%s\n' "$APP_IMAGE_TAG"
+          } >> .deploy-env/.env.production
 
       - name: Configure SSH
-        env:
-          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
-          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT || '22' }}
-          PROD_SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
         run: |
+          set -a
+          . .deploy-env/.env
+          set +a
+          PROD_SSH_PORT="${PROD_SSH_PORT:-22}"
+
           mkdir -p ~/.ssh
-          printf '%s\n' "$PROD_SSH_PRIVATE_KEY" > ~/.ssh/prod_key
+          cp .deploy-env/prod_key ~/.ssh/prod_key
           chmod 600 ~/.ssh/prod_key
           ssh-keyscan -p "$PROD_SSH_PORT" -H "$PROD_SSH_HOST" >> ~/.ssh/known_hosts
 
-      - name: Sync deployment environment files
-        env:
-          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
-          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT || '22' }}
-          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
-          PROD_APP_DIR: ${{ secrets.PROD_APP_DIR }}
-          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
-          MONITORING_ENV_FILE: ${{ secrets.MONITORING_ENV_FILE }}
+      - name: Sync deployment environment file
         run: |
-          mkdir -p .deploy-env
-          printf '%s\n' "$PROD_ENV_FILE" > .deploy-env/.env.production
+          set -a
+          . .deploy-env/.env
+          set +a
+          PROD_SSH_PORT="${PROD_SSH_PORT:-22}"
 
           ssh -i ~/.ssh/prod_key -p "$PROD_SSH_PORT" "$PROD_SSH_USER@$PROD_SSH_HOST" \
             "mkdir -p '$PROD_APP_DIR/deploy'"
@@ -133,24 +158,18 @@ jobs:
             .deploy-env/.env.production \
             "$PROD_SSH_USER@$PROD_SSH_HOST:$PROD_APP_DIR/deploy/.env.production"
 
-          if [ -n "$MONITORING_ENV_FILE" ]; then
-            printf '%s\n' "$MONITORING_ENV_FILE" > .deploy-env/.env.monitoring
-            scp -i ~/.ssh/prod_key -P "$PROD_SSH_PORT" \
-              .deploy-env/.env.monitoring \
-              "$PROD_SSH_USER@$PROD_SSH_HOST:$PROD_APP_DIR/deploy/.env.monitoring"
-          fi
-
           ssh -i ~/.ssh/prod_key -p "$PROD_SSH_PORT" "$PROD_SSH_USER@$PROD_SSH_HOST" \
-            "chmod 600 '$PROD_APP_DIR/deploy/.env.production' '$PROD_APP_DIR/deploy/.env.monitoring' 2>/dev/null || true"
+            "chmod 600 '$PROD_APP_DIR/deploy/.env.production'"
 
       - name: Deploy over SSH
         env:
-          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
-          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT || '22' }}
-          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
-          PROD_APP_DIR: ${{ secrets.PROD_APP_DIR }}
           APP_IMAGE: ${{ needs.build.outputs.image }}
           APP_IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
         run: |
+          set -a
+          . .deploy-env/.env
+          set +a
+          PROD_SSH_PORT="${PROD_SSH_PORT:-22}"
+
           ssh -i ~/.ssh/prod_key -p "$PROD_SSH_PORT" "$PROD_SSH_USER@$PROD_SSH_HOST" \
             "cd '$PROD_APP_DIR' && git fetch origin main && git checkout main && git pull --ff-only origin main && APP_IMAGE='$APP_IMAGE' APP_IMAGE_TAG='$APP_IMAGE_TAG' bash deploy/deploy-bluegreen.sh && bash deploy/apply-host-nginx.sh && bash deploy/deploy-monitoring.sh"

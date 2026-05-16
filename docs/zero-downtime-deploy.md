@@ -9,14 +9,20 @@ This project uses a blue-green deployment flow for production:
 
 ## First-Time Setup
 
-Create the production environment file on the server for manual deployments:
+Create the environment file from the repository root:
 
 ```bash
-cp deploy/.env.production.example deploy/.env.production
-vi deploy/.env.production
+cp .env.example .env
+vi .env
 ```
 
-For CI/CD deployments, store the full file contents in the GitHub Actions secret `PROD_ENV_FILE`. The workflow writes it to `deploy/.env.production` on the server before running deployment scripts.
+For manual server deploys, copy it to the runtime path used by the deploy scripts:
+
+```bash
+cp .env deploy/.env.production
+```
+
+For CI/CD deployments, store the full file contents in the GitHub Actions secret `DEPLOY_ENV_FILE`. The workflow uses the SSH values for deployment and writes the remaining production values to `deploy/.env.production` on the server before running deployment scripts.
 
 Set real values for:
 
@@ -47,7 +53,7 @@ The current production app container already owns host port `8080`. A containeri
 
 Recommended adoption path:
 
-1. Set `PUBLIC_PORT=18080` in `deploy/.env.production`.
+1. Set `PUBLIC_PORT=18080` in `DEPLOY_ENV_FILE` or `deploy/.env.production`.
 2. Run `bash deploy/deploy-bluegreen.sh`.
 3. Verify the blue-green stack on `http://127.0.0.1:18080/actuator/health`.
 4. Run `bash deploy/apply-host-nginx.sh` to point host Nginx to `127.0.0.1:18080`.
@@ -80,7 +86,7 @@ CI/CD passes the exact merge commit SHA as `APP_IMAGE_TAG`. For manual deploys y
 APP_IMAGE=ghcr.io/daehyuh/daehyun-backend APP_IMAGE_TAG=<commit-sha> bash deploy/deploy-bluegreen.sh
 ```
 
-If the GHCR package is private, set `GHCR_USERNAME` and `GHCR_TOKEN` in `deploy/.env.production` so the server can pull images.
+If the GHCR package is private, set `GHCR_USERNAME` and `GHCR_TOKEN` in `DEPLOY_ENV_FILE` so the server can pull images.
 
 `deploy/apply-host-nginx.sh` applies the host Nginx config, runs `nginx -t`, and reloads Nginx only if the config is valid. It does not issue or renew SSL certificates. Existing Let's Encrypt certificates stay managed by Certbot.
 
@@ -121,6 +127,6 @@ APP_IMAGE=ghcr.io/daehyuh/daehyun-backend APP_IMAGE_TAG=<previous-good-commit-sh
 
 ```bash
 docker compose -p daehyun-backend -f docker-compose.bluegreen.yml ps
-curl -fsS http://127.0.0.1:8080/nginx-health
-curl -fsS http://127.0.0.1:8080/actuator/health
+curl -fsS http://127.0.0.1:18080/nginx-health
+curl -fsS http://127.0.0.1:18080/actuator/health
 ```
