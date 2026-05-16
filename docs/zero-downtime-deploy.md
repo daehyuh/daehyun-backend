@@ -4,7 +4,7 @@ This project uses a blue-green deployment flow for production:
 
 - `nginx` exposes the public API port.
 - `app-blue` and `app-green` are interchangeable Spring Boot containers.
-- The deploy script starts the inactive app, waits for `/actuator/health`, switches Nginx, then stops the old app.
+- The deploy script pulls a GHCR image tagged with the commit SHA, starts the inactive app, waits for `/actuator/health`, switches Nginx, then stops the old app.
 - MariaDB stays on the same persistent Docker volume and is not recreated during app deployments.
 
 ## First-Time Setup
@@ -21,6 +21,8 @@ Set real values for:
 - `SPRING_DATASOURCE_PASSWORD`
 - `MARIADB_ROOT_PASSWORD`
 - `PUBLIC_PORT`
+- `APP_IMAGE`
+- `APP_IMAGE_TAG`
 - `HOST_NGINX_SERVER_NAME`
 - `HOST_NGINX_SSL_CERT`
 - `HOST_NGINX_SSL_KEY`
@@ -61,11 +63,19 @@ bash deploy/deploy-monitoring.sh
 The script will:
 
 1. Start MariaDB if needed.
-2. Build the inactive app container.
+2. Pull the inactive app image from GHCR.
 3. Start the inactive app.
 4. Wait for `/actuator/health`.
 5. Reload Nginx to route traffic to the healthy app.
 6. Stop the old app after a short drain period.
+
+CI/CD passes the exact merge commit SHA as `APP_IMAGE_TAG`. For manual deploys you can set it directly:
+
+```bash
+APP_IMAGE=ghcr.io/daehyuh/daehyun-backend APP_IMAGE_TAG=<commit-sha> bash deploy/deploy-bluegreen.sh
+```
+
+If the GHCR package is private, set `GHCR_USERNAME` and `GHCR_TOKEN` in `deploy/.env.production` so the server can pull images.
 
 `deploy/apply-host-nginx.sh` applies the host Nginx config, runs `nginx -t`, and reloads Nginx only if the config is valid. It does not issue or renew SSL certificates. Existing Let's Encrypt certificates stay managed by Certbot.
 
@@ -99,8 +109,7 @@ If the current config already lives under `/etc/nginx/sites-available`, set `HOS
 If a deployment passes health checks but you need to roll back manually, rerun the script after checking out the previous commit:
 
 ```bash
-git checkout <previous-good-commit>
-bash deploy/deploy-bluegreen.sh
+APP_IMAGE=ghcr.io/daehyuh/daehyun-backend APP_IMAGE_TAG=<previous-good-commit-sha> bash deploy/deploy-bluegreen.sh
 ```
 
 ## Useful Checks

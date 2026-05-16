@@ -7,6 +7,7 @@ HEALTH_PATH="${HEALTH_PATH:-/actuator/health}"
 HEALTH_RETRIES="${HEALTH_RETRIES:-30}"
 HEALTH_SLEEP_SECONDS="${HEALTH_SLEEP_SECONDS:-3}"
 DRAIN_SECONDS="${DRAIN_SECONDS:-10}"
+APP_IMAGE="${APP_IMAGE:-ghcr.io/daehyuh/daehyun-backend}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -27,6 +28,7 @@ fi
 
 export PROJECT_NAME
 export PUBLIC_PORT
+export APP_IMAGE
 export APP_IMAGE_TAG="${APP_IMAGE_TAG:-$(git rev-parse --short HEAD 2>/dev/null || date +%Y%m%d%H%M%S)}"
 
 COMPOSE=(docker compose -p "${PROJECT_NAME}" -f "${COMPOSE_FILE}")
@@ -107,15 +109,29 @@ reload_or_start_nginx() {
   fi
 }
 
+login_to_registry_if_configured() {
+  local registry="${CONTAINER_REGISTRY:-ghcr.io}"
+  local username="${CONTAINER_REGISTRY_USERNAME:-${GHCR_USERNAME:-}}"
+  local token="${CONTAINER_REGISTRY_TOKEN:-${GHCR_TOKEN:-}}"
+
+  if [[ -n "${username}" && -n "${token}" ]]; then
+    echo "Logging in to ${registry} as ${username}"
+    printf '%s' "${token}" | docker login "${registry}" -u "${username}" --password-stdin >/dev/null
+  else
+    echo "Skipping registry login. Set GHCR_USERNAME and GHCR_TOKEN when pulling private images."
+  fi
+}
+
 active_service="$(configured_active_service)"
 target_service="$(opposite_service "${active_service}")"
 
 echo "Active service: ${active_service:-none}"
 echo "Target service: ${target_service}"
-echo "Image tag: ${APP_IMAGE_TAG}"
+echo "Image: ${APP_IMAGE}:${APP_IMAGE_TAG}"
 
+login_to_registry_if_configured
 "${COMPOSE[@]}" up -d db
-"${COMPOSE[@]}" build "${target_service}"
+"${COMPOSE[@]}" pull "${target_service}"
 "${COMPOSE[@]}" up -d --no-deps "${target_service}"
 
 wait_for_health "${target_service}"
