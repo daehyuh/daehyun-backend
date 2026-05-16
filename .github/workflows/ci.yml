@@ -76,4 +76,4 @@ jobs:
           PROD_APP_DIR: ${{ secrets.PROD_APP_DIR }}
         run: |
           ssh -i ~/.ssh/prod_key -p "$PROD_SSH_PORT" "$PROD_SSH_USER@$PROD_SSH_HOST" \
-            "cd '$PROD_APP_DIR' && git fetch origin main && git checkout main && git pull --ff-only origin main && bash deploy/deploy-bluegreen.sh && bash deploy/apply-host-nginx.sh"
+            "cd '$PROD_APP_DIR' && git fetch origin main && git checkout main && git pull --ff-only origin main && bash deploy/deploy-bluegreen.sh && bash deploy/apply-host-nginx.sh && bash deploy/deploy-monitoring.sh"

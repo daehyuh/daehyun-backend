@@ -45,6 +45,7 @@ After a merge to `main`, the deploy job connects to the production server, fast-
 ```bash
 bash deploy/deploy-bluegreen.sh
 bash deploy/apply-host-nginx.sh
+bash deploy/deploy-monitoring.sh
 ```
 
 Host Nginx deployment is controlled by `deploy/.env.production`.
@@ -57,3 +58,12 @@ HOST_NGINX_CONF_PATH=/etc/nginx/conf.d/api.xn--vk1b177d.com.conf
 ```
 
 The script validates the config with `nginx -t` before reloading. SSL certificates are not reissued during CI/CD.
+
+Monitoring deployment is controlled by `deploy/.env.monitoring`.
+
+```bash
+ENABLE_MONITORING=true
+GRAFANA_ADMIN_PASSWORD=<strong-password>
+```
+
+When enabled, CI/CD starts Prometheus, Grafana, Alertmanager, node-exporter, and cAdvisor after the app deployment.

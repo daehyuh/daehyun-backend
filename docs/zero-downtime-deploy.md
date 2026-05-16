@@ -55,6 +55,7 @@ Run this from the repository root on the server:
 ```bash
 bash deploy/deploy-bluegreen.sh
 bash deploy/apply-host-nginx.sh
+bash deploy/deploy-monitoring.sh
 ```
 
 The script will:

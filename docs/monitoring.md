@@ -27,23 +27,23 @@ Set a real value for:
 GRAFANA_ADMIN_PASSWORD
 ```
 
+Enable the stack:
+
+```text
+ENABLE_MONITORING=true
+```
+
 ## Start Monitoring
 
 Run the monitoring stack with the blue-green production stack:
 
 ```bash
-set -a
-source deploy/.env.production
-source deploy/.env.monitoring
-set +a
-
-docker compose -p daehyun-backend \
-  -f docker-compose.bluegreen.yml \
-  -f docker-compose.monitoring.yml \
-  up -d prometheus grafana alertmanager node-exporter cadvisor
+bash deploy/deploy-monitoring.sh
 ```
 
 Grafana and Prometheus bind to `127.0.0.1` by default, so they are not public.
+
+CI/CD also runs `deploy/deploy-monitoring.sh` after the application deployment. It only starts the stack when `ENABLE_MONITORING=true`.
 
 ## Access Grafana
 
