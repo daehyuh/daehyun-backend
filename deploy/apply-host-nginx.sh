@@ -33,7 +33,7 @@ HOST_NGINX_RELOAD_CMD="${HOST_NGINX_RELOAD_CMD:-systemctl reload nginx}"
 require_file() {
   local path="$1"
   local label="$2"
-  if [[ ! -f "${path}" ]]; then
+  if ! run_privileged test -f "${path}"; then
     echo "${label} does not exist: ${path}" >&2
     exit 1
   fi
