@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -71,7 +72,7 @@ public class TribunalController {
     ) {
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
-                tribunalService.getCases(page, size, currentUser(authentication)),
+                tribunalService.getCases(page, size, optionalUser(authentication)),
                 "사건 목록 조회 성공"
         ));
     }
@@ -83,7 +84,7 @@ public class TribunalController {
     ) {
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
-                tribunalService.getCase(caseId, currentUser(authentication)),
+                tribunalService.getCase(caseId, optionalUser(authentication)),
                 "사건 조회 성공"
         ));
     }
@@ -174,5 +175,19 @@ public class TribunalController {
             throw new AccessDeniedException("로그인이 필요합니다.");
         }
         return userService.findById(Long.parseLong(authentication.getName()));
+    }
+
+    private User optionalUser(Authentication authentication) {
+        if (authentication == null
+                || authentication instanceof AnonymousAuthenticationToken
+                || authentication.getName() == null) {
+            return null;
+        }
+
+        try {
+            return userService.findById(Long.parseLong(authentication.getName()));
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 }
