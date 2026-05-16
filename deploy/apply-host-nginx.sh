@@ -56,6 +56,9 @@ HOST_NGINX_CONF_PATH="${HOST_NGINX_CONF_PATH:-/etc/nginx/conf.d/${HOST_NGINX_SER
 HOST_NGINX_BACKUP_DIR="${HOST_NGINX_BACKUP_DIR:-/etc/nginx/codex-backups}"
 HOST_NGINX_TEST_CMD="${HOST_NGINX_TEST_CMD:-nginx -t}"
 HOST_NGINX_RELOAD_CMD="${HOST_NGINX_RELOAD_CMD:-systemctl reload nginx}"
+EXPOSE_GRAFANA="${EXPOSE_GRAFANA:-false}"
+GRAFANA_PUBLIC_PATH="${GRAFANA_PUBLIC_PATH:-/grafana}"
+GRAFANA_UPSTREAM="${GRAFANA_UPSTREAM:-http://127.0.0.1:${GRAFANA_PORT:-3000}}"
 
 require_file() {
   local path="$1"
@@ -66,17 +69,68 @@ require_file() {
   fi
 }
 
-escape_sed() {
-  printf '%s' "$1" | sed -e 's/[\/&|]/\\&/g'
+normalize_public_path() {
+  local path="$1"
+  [[ "${path}" == /* ]] || path="/${path}"
+  while [[ "${path}" != "/" && "${path}" == */ ]]; do
+    path="${path%/}"
+  done
+  printf '%s' "${path}"
+}
+
+render_grafana_location() {
+  if [[ "${EXPOSE_GRAFANA}" != "true" ]]; then
+    return 0
+  fi
+
+  local path
+  path="$(normalize_public_path "${GRAFANA_PUBLIC_PATH}")"
+  if [[ "${path}" == "/" ]]; then
+    echo "GRAFANA_PUBLIC_PATH cannot be /. It would shadow the API proxy." >&2
+    exit 1
+  fi
+
+  cat <<EOF
+    location = ${path} {
+        return 301 ${path}/;
+    }
+
+    location ${path}/ {
+        proxy_pass ${GRAFANA_UPSTREAM};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Prefix ${path};
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_connect_timeout 3s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+EOF
 }
 
 render_template() {
-  sed \
-    -e "s|{{SERVER_NAME}}|$(escape_sed "${HOST_NGINX_SERVER_NAME}")|g" \
-    -e "s|{{UPSTREAM}}|$(escape_sed "${HOST_NGINX_UPSTREAM}")|g" \
-    -e "s|{{SSL_CERT}}|$(escape_sed "${HOST_NGINX_SSL_CERT}")|g" \
-    -e "s|{{SSL_KEY}}|$(escape_sed "${HOST_NGINX_SSL_KEY}")|g" \
-    "${TEMPLATE_FILE}"
+  local grafana_location
+  local line
+  grafana_location="$(render_grafana_location)"
+
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    if [[ "${line}" == *"{{GRAFANA_LOCATION}}"* ]]; then
+      if [[ -n "${grafana_location}" ]]; then
+        printf '%s\n' "${grafana_location}"
+      fi
+      continue
+    fi
+
+    line="${line//'{{SERVER_NAME}}'/${HOST_NGINX_SERVER_NAME}}"
+    line="${line//'{{UPSTREAM}}'/${HOST_NGINX_UPSTREAM}}"
+    line="${line//'{{SSL_CERT}}'/${HOST_NGINX_SSL_CERT}}"
+    line="${line//'{{SSL_KEY}}'/${HOST_NGINX_SSL_KEY}}"
+    printf '%s\n' "${line}"
+  done < "${TEMPLATE_FILE}"
 }
 
 require_file "${TEMPLATE_FILE}" "Host Nginx template"
