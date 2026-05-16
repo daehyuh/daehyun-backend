@@ -40,11 +40,36 @@ Run the monitoring stack with the blue-green production stack:
 bash deploy/deploy-monitoring.sh
 ```
 
-Grafana and Prometheus bind to `127.0.0.1` by default, so they are not public.
+Grafana, Prometheus, and Alertmanager bind to `127.0.0.1` by default. Grafana can be exposed through the host Nginx reverse proxy while Prometheus and Alertmanager stay private.
 
 CI/CD also runs `deploy/deploy-monitoring.sh` after the application deployment. It only starts the stack when `ENABLE_MONITORING=true`.
 
-## Access Grafana
+## Access Grafana Through Nginx
+
+Set these values in `.env` or `DEPLOY_ENV_FILE`:
+
+```text
+EXPOSE_GRAFANA=true
+GRAFANA_PUBLIC_PATH=/grafana
+GRAFANA_UPSTREAM=http://127.0.0.1:3000
+GRAFANA_ROOT_URL=https://api.xn--vk1b177d.com/grafana/
+GRAFANA_SERVE_FROM_SUB_PATH=true
+```
+
+Then apply Nginx and restart monitoring:
+
+```bash
+bash deploy/apply-host-nginx.sh
+bash deploy/deploy-monitoring.sh
+```
+
+Open:
+
+```text
+https://api.xn--vk1b177d.com/grafana/
+```
+
+## Access Grafana Through SSH
 
 Open an SSH tunnel from your local machine:
 
