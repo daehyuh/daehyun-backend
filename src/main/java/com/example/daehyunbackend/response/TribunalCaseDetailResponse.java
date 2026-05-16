@@ -20,6 +20,7 @@ public record TribunalCaseDetailResponse(
         List<TribunalCafeLinkResponse> cafeLinks,
         List<TribunalReplayMessageResponse> replayMessages,
         TribunalVoteSummaryResponse voteSummary,
+        long viewCount,
         List<TribunalCommentResponse> comments,
         LocalDateTime replayFetchedAt,
         LocalDateTime createdAt,
@@ -30,6 +31,7 @@ public record TribunalCaseDetailResponse(
             List<TribunalCafeLinkResponse> cafeLinks,
             List<TribunalReplayMessageResponse> replayMessages,
             TribunalVoteSummaryResponse voteSummary,
+            long viewCount,
             List<TribunalCommentResponse> comments
     ) {
         return new TribunalCaseDetailResponse(
@@ -47,6 +49,7 @@ public record TribunalCaseDetailResponse(
                 cafeLinks,
                 replayMessages,
                 voteSummary,
+                viewCount,
                 comments,
                 tribunalCase.getReplayFetchedAt(),
                 tribunalCase.getCreatedAt(),
