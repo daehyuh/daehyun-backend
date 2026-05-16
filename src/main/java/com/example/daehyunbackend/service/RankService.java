@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -37,6 +38,7 @@ public class RankService {
 
     private final Object refreshLock = new Object();
     private final Map<RankPageCacheKey, CachedRankPage> pageCache = new ConcurrentHashMap<>();
+    private final Map<RankSearchCacheKey, CachedRankPage> searchCache = new ConcurrentHashMap<>();
     private final Map<LegacyRankCacheKey, CachedLegacyRank> legacyCache = new ConcurrentHashMap<>();
 
     @Value("${rank.page.default-size:50}")
@@ -88,6 +90,53 @@ public class RankService {
                 content
         );
         pageCache.put(cacheKey, new CachedRankPage(response, expiresAt()));
+        return response;
+    }
+
+    public RankPageResponse searchRankPage(RankType rankType, String keyword, Integer page, Integer size) {
+        String normalizedKeyword = normalizeKeyword(keyword);
+        if (normalizedKeyword == null) {
+            return getRankPage(rankType, page, size);
+        }
+
+        LocalDate rankingDate = LocalDate.now();
+        int normalizedPage = Math.max(page == null ? 0 : page, 0);
+        int normalizedSize = normalizeSize(size);
+
+        ensureSnapshot(rankType, rankingDate);
+
+        RankSearchCacheKey cacheKey = new RankSearchCacheKey(
+                rankType,
+                rankingDate,
+                normalizedKeyword.toLowerCase(Locale.ROOT),
+                normalizedPage,
+                normalizedSize
+        );
+        CachedRankPage cached = searchCache.get(cacheKey);
+        if (cached != null && cached.isAlive()) {
+            meterRegistry.counter("rank_cache_requests_total", "cache", "hit", "mode", "search").increment();
+            return cached.response().withCached(true);
+        }
+
+        meterRegistry.counter("rank_cache_requests_total", "cache", "miss", "mode", "search").increment();
+        Page<RankSnapshot> snapshotPage = searchSnapshots(rankType, rankingDate, normalizedKeyword, normalizedPage, normalizedSize);
+        LocalDateTime updatedAt = findUpdatedAt(rankType, rankingDate);
+        List<RankEntryResponse> content = snapshotPage.getContent().stream()
+                .map(RankEntryResponse::from)
+                .toList();
+
+        RankPageResponse response = new RankPageResponse(
+                rankType,
+                rankingDate,
+                updatedAt,
+                normalizedPage,
+                normalizedSize,
+                snapshotPage.getTotalElements(),
+                snapshotPage.getTotalPages(),
+                false,
+                content
+        );
+        searchCache.put(cacheKey, new CachedRankPage(response, expiresAt()));
         return response;
     }
 
@@ -248,12 +297,47 @@ public class RankService {
         return Math.max(1, Math.min(requested, maxPageSize));
     }
 
+    private String normalizeKeyword(String keyword) {
+        if (keyword == null) {
+            return null;
+        }
+
+        String normalized = keyword.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private Page<RankSnapshot> searchSnapshots(
+            RankType rankType,
+            LocalDate rankingDate,
+            String keyword,
+            int page,
+            int size
+    ) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+        if (rankType == RankType.GUILD_BLACK) {
+            return rankSnapshotRepository.findByRankTypeAndRankingDateAndGuildNameContainingIgnoreCaseOrderByRankNoAsc(
+                    rankType,
+                    rankingDate,
+                    keyword,
+                    pageRequest
+            );
+        }
+
+        return rankSnapshotRepository.findByRankTypeAndRankingDateAndNicknameContainingIgnoreCaseOrderByRankNoAsc(
+                rankType,
+                rankingDate,
+                keyword,
+                pageRequest
+        );
+    }
+
     private Instant expiresAt() {
         return Instant.now().plusSeconds(cacheTtlSeconds);
     }
 
     private void evictCaches(LocalDate rankingDate) {
         pageCache.keySet().removeIf(key -> key.rankingDate().equals(rankingDate));
+        searchCache.keySet().removeIf(key -> key.rankingDate().equals(rankingDate));
         legacyCache.keySet().removeIf(key -> key.rankingDate().equals(rankingDate));
     }
 
@@ -287,6 +371,9 @@ public class RankService {
     }
 
     private record RankPageCacheKey(RankType rankType, LocalDate rankingDate, int page, int size) {
+    }
+
+    private record RankSearchCacheKey(RankType rankType, LocalDate rankingDate, String keyword, int page, int size) {
     }
 
     private record LegacyRankCacheKey(RankType rankType, LocalDate rankingDate) {

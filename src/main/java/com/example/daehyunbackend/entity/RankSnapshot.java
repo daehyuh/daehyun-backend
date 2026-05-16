@@ -27,6 +27,8 @@ import java.time.LocalDateTime;
         name = "rank_snapshot",
         indexes = {
                 @Index(name = "idx_rank_snapshot_page", columnList = "rank_type, ranking_date, rank_no"),
+                @Index(name = "idx_rank_snapshot_nickname", columnList = "rank_type, ranking_date, nickname"),
+                @Index(name = "idx_rank_snapshot_guild_name", columnList = "rank_type, ranking_date, guild_name"),
                 @Index(name = "idx_rank_snapshot_updated", columnList = "rank_type, ranking_date, created_at")
         }
 )

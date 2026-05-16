@@ -19,6 +19,20 @@ public interface RankSnapshotRepository extends JpaRepository<RankSnapshot, Long
             Pageable pageable
     );
 
+    Page<RankSnapshot> findByRankTypeAndRankingDateAndNicknameContainingIgnoreCaseOrderByRankNoAsc(
+            RankType rankType,
+            LocalDate rankingDate,
+            String nickname,
+            Pageable pageable
+    );
+
+    Page<RankSnapshot> findByRankTypeAndRankingDateAndGuildNameContainingIgnoreCaseOrderByRankNoAsc(
+            RankType rankType,
+            LocalDate rankingDate,
+            String guildName,
+            Pageable pageable
+    );
+
     List<RankSnapshot> findByRankTypeAndRankingDateOrderByRankNoAsc(RankType rankType, LocalDate rankingDate);
 
     Optional<RankSnapshot> findTopByRankTypeAndRankingDateOrderByCreatedAtDesc(

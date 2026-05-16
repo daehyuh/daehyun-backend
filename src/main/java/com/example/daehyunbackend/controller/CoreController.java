@@ -148,8 +148,14 @@ public class CoreController {
     @GetMapping("/rank/black")
     public Object getBlackRank(
             @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String nickname,
+            @RequestParam(required = false) String keyword
     ) {
+        String searchKeyword = firstNonBlank(nickname, keyword);
+        if (searchKeyword != null) {
+            return rankService.searchRankPage(RankType.BLACK, searchKeyword, page, size);
+        }
         if (page != null || size != null) {
             return rankService.getRankPage(RankType.BLACK, page, size);
         }
@@ -217,12 +223,28 @@ public class CoreController {
     @GetMapping("/rank/guild")
     public Object getGuildBlackRank(
             @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String guildName,
+            @RequestParam(required = false) String keyword
     ) {
+        String searchKeyword = firstNonBlank(guildName, keyword);
+        if (searchKeyword != null) {
+            return rankService.searchRankPage(RankType.GUILD_BLACK, searchKeyword, page, size);
+        }
         if (page != null || size != null) {
             return rankService.getRankPage(RankType.GUILD_BLACK, page, size);
         }
         return rankService.getLegacyRank(RankType.GUILD_BLACK);
+    }
+
+    private String firstNonBlank(String first, String second) {
+        if (first != null && !first.isBlank()) {
+            return first;
+        }
+        if (second != null && !second.isBlank()) {
+            return second;
+        }
+        return null;
     }
 
     public List<?> guildBlackRankList() {

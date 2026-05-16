@@ -9,6 +9,15 @@ GET /core/rank/black?page=0&size=50
 GET /core/rank/guild?page=0&size=50
 ```
 
+Global search is also handled by the backend so the frontend does not need to fetch the full ranking list:
+
+```text
+GET /core/rank/black?nickname=player&page=0&size=20
+GET /core/rank/black?keyword=player&page=0&size=20
+GET /core/rank/guild?guildName=guild&page=0&size=20
+GET /core/rank/guild?keyword=guild&page=0&size=20
+```
+
 ## Flow
 
 ```text
@@ -42,7 +51,7 @@ RANK_SNAPSHOT_MAX_AGE_SECONDS=900
 The service emits Micrometer counters:
 
 ```text
-rank_cache_requests_total{cache="hit|miss", mode="page|legacy"}
+rank_cache_requests_total{cache="hit|miss", mode="page|search|legacy"}
 rank_snapshot_refresh_total
 ```
 
