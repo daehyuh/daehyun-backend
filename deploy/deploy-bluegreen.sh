@@ -111,6 +111,8 @@ wait_for_health() {
 
 cleanup_failed_deployment() {
   if [[ -n "${target_service}" && "${deployment_switched}" != "true" ]]; then
+    echo "Deployment failed before traffic switch. Last logs for ${target_service}:" >&2
+    "${COMPOSE[@]}" logs --tail=160 "${target_service}" >&2 || true
     echo "Deployment failed before traffic switch. Cleaning up ${target_service}." >&2
     "${COMPOSE[@]}" stop "${target_service}" >/dev/null 2>&1 || true
     "${COMPOSE[@]}" rm -f "${target_service}" >/dev/null 2>&1 || true

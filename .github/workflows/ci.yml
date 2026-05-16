@@ -101,6 +101,9 @@ jobs:
           APP_IMAGE: ${{ needs.build.outputs.image }}
           APP_IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
         run: |
+          REQUESTED_APP_IMAGE="$APP_IMAGE"
+          REQUESTED_APP_IMAGE_TAG="$APP_IMAGE_TAG"
+
           test -n "$DEPLOY_ENV_FILE"
           mkdir -p .deploy-env
           printf '%s\n' "$DEPLOY_ENV_FILE" > .deploy-env/.env
@@ -151,8 +154,8 @@ jobs:
             { print }
           ' .deploy-env/.env > .deploy-env/.env.production
           {
-            printf 'APP_IMAGE=%s\n' "$APP_IMAGE"
-            printf 'APP_IMAGE_TAG=%s\n' "$APP_IMAGE_TAG"
+            printf 'APP_IMAGE=%s\n' "$REQUESTED_APP_IMAGE"
+            printf 'APP_IMAGE_TAG=%s\n' "$REQUESTED_APP_IMAGE_TAG"
           } >> .deploy-env/.env.production
 
       - name: Configure SSH
@@ -188,13 +191,16 @@ jobs:
           APP_IMAGE: ${{ needs.build.outputs.image }}
           APP_IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
         run: |
+          REQUESTED_APP_IMAGE="$APP_IMAGE"
+          REQUESTED_APP_IMAGE_TAG="$APP_IMAGE_TAG"
+
           set -a
           . .deploy-env/.env
           set +a
           PROD_SSH_PORT="${PROD_SSH_PORT:-22}"
 
           ssh -i ~/.ssh/prod_key -p "$PROD_SSH_PORT" "$PROD_SSH_USER@$PROD_SSH_HOST" \
-            "PROD_APP_DIR='$PROD_APP_DIR' APP_IMAGE='$APP_IMAGE' APP_IMAGE_TAG='$APP_IMAGE_TAG' bash -se" <<'REMOTE_DEPLOY'
+            "PROD_APP_DIR='$PROD_APP_DIR' APP_IMAGE='$REQUESTED_APP_IMAGE' APP_IMAGE_TAG='$REQUESTED_APP_IMAGE_TAG' bash -se" <<'REMOTE_DEPLOY'
           set -Eeuo pipefail
 
           cd "$PROD_APP_DIR"
