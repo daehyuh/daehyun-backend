@@ -44,4 +44,16 @@ After a merge to `main`, the deploy job connects to the production server, fast-
 
 ```bash
 bash deploy/deploy-bluegreen.sh
+bash deploy/apply-host-nginx.sh
 ```
+
+Host Nginx deployment is controlled by `deploy/.env.production`.
+
+```bash
+APPLY_HOST_NGINX=true
+HOST_NGINX_SERVER_NAME=api.xn--vk1b177d.com
+HOST_NGINX_UPSTREAM=http://127.0.0.1:18080
+HOST_NGINX_CONF_PATH=/etc/nginx/conf.d/api.xn--vk1b177d.com.conf
+```
+
+The script validates the config with `nginx -t` before reloading. SSL certificates are not reissued during CI/CD.
