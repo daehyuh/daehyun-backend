@@ -13,7 +13,7 @@ server {
     ssl_certificate_key {{SSL_KEY}};
     ssl_protocols TLSv1.2 TLSv1.3;
 
-    client_max_body_size 20m;
+    client_max_body_size 50m;
 
 {{GRAFANA_LOCATION}}
 
