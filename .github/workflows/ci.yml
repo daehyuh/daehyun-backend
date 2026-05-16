@@ -285,6 +285,23 @@ jobs:
           ssh -i ~/.ssh/prod_key -p "$PROD_SSH_PORT" "$PROD_SSH_USER@$PROD_SSH_HOST" \
             "chmod 600 '$PROD_APP_DIR/.env'"
 
+      - name: Sync deployment files
+        run: |
+          . .deploy-env/ci.env
+          PROD_SSH_PORT="${PROD_SSH_PORT:-22}"
+
+          tar -czf .deploy-env/deploy-files.tgz \
+            docker-compose.bluegreen.yml \
+            docker-compose.monitoring.yml \
+            deploy
+
+          scp -i ~/.ssh/prod_key -P "$PROD_SSH_PORT" \
+            .deploy-env/deploy-files.tgz \
+            "$PROD_SSH_USER@$PROD_SSH_HOST:/tmp/daehyun-backend-deploy-files.tgz"
+
+          ssh -i ~/.ssh/prod_key -p "$PROD_SSH_PORT" "$PROD_SSH_USER@$PROD_SSH_HOST" \
+            "mkdir -p '$PROD_APP_DIR' && tar -xzf /tmp/daehyun-backend-deploy-files.tgz -C '$PROD_APP_DIR' && rm -f /tmp/daehyun-backend-deploy-files.tgz"
+
       - name: Deploy over SSH
         env:
           APP_IMAGE: ${{ needs.build.outputs.image }}
@@ -301,16 +318,6 @@ jobs:
           set -Eeuo pipefail
 
           cd "$PROD_APP_DIR"
-          git fetch origin main
-          git checkout main
-
-          if ! git diff --quiet || ! git diff --cached --quiet; then
-            stash_message="ci pre-deploy tracked changes $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            git stash push -m "$stash_message" -- .
-            echo "Stashed local tracked changes before deploy: $stash_message"
-          fi
-
-          git pull --ff-only origin main
           APP_IMAGE="$APP_IMAGE" APP_IMAGE_TAG="$APP_IMAGE_TAG" bash deploy/deploy-bluegreen.sh
           bash deploy/apply-host-nginx.sh
           bash deploy/deploy-monitoring.sh
