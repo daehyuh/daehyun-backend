@@ -115,7 +115,7 @@ jobs:
           from pathlib import Path
 
           env_path = Path(".deploy-env/.env")
-          text = env_path.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
+          text = env_path.read_text(encoding="utf-8-sig").replace("\r\n", "\n").replace("\r", "\n")
           env_path.write_text(text, encoding="utf-8")
 
           PROPERTY_TO_ENV = {
