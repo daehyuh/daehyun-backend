@@ -95,6 +95,9 @@ jobs:
       group: production
       cancel-in-progress: false
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Validate deployment configuration
         env:
           DEPLOY_ENV_FILE: ${{ secrets.DEPLOY_ENV_FILE }}
