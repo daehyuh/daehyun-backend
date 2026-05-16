@@ -16,18 +16,16 @@ cp .env.example .env
 vi .env
 ```
 
-For manual server deploys, copy it to the runtime path used by the deploy scripts:
-
-```bash
-cp .env deploy/.env.production
-```
-
-For CI/CD deployments, store the full file contents in the GitHub Actions secret `DEPLOY_ENV_FILE`. The workflow uses the SSH values for deployment and writes the remaining production values to `deploy/.env.production` on the server before running deployment scripts.
+For CI/CD deployments, store the full file contents in the GitHub Actions secret `DEPLOY_ENV_FILE`. The workflow uses the SSH values for deployment and writes the remaining production values to `.env` on the server before running deployment scripts.
 
 Set real values for:
 
 - `SPRING_DATASOURCE_PASSWORD`
 - `MARIADB_ROOT_PASSWORD`
+- `JWT_SECRET`
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `GOOGLE_OAUTH_CLIENT_SECRET`
+- `ADMIN_PASSWORD`
 - `PUBLIC_PORT`
 
 CI/CD passes `APP_IMAGE` and `APP_IMAGE_TAG` automatically. Add them to the env file only for manual deployments or custom registries.
@@ -53,7 +51,7 @@ The current production app container already owns host port `8080`. A containeri
 
 Recommended adoption path:
 
-1. Set `PUBLIC_PORT=18080` in `DEPLOY_ENV_FILE` or `deploy/.env.production`.
+1. Set `PUBLIC_PORT=18080` in `DEPLOY_ENV_FILE` or `.env`.
 2. Run `bash deploy/deploy-bluegreen.sh`.
 3. Verify the blue-green stack on `http://127.0.0.1:18080/actuator/health`.
 4. Run `bash deploy/apply-host-nginx.sh` to point host Nginx to `127.0.0.1:18080`.

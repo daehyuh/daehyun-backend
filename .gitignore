@@ -36,8 +36,7 @@ out/
 ### VS Code ###
 .vscode/
 
-### properties ###
-src/main/resources/*.properties
+### environment ###
 .env
 .env.*
 !.env.example
@@ -45,3 +44,6 @@ src/main/resources/*.properties
 deploy/.env
 deploy/.env.*
 deploy/runtime/
+
+### local Spring overrides ###
+src/main/resources/application-*.local.properties

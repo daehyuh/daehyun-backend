@@ -13,7 +13,7 @@ REQUESTED_APP_IMAGE_TAG="${APP_IMAGE_TAG:-}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 COMPOSE_FILE="${COMPOSE_FILE:-${PROJECT_ROOT}/docker-compose.bluegreen.yml}"
-ENV_FILE="${ENV_FILE:-${PROJECT_ROOT}/deploy/.env.production}"
+ENV_FILE="${ENV_FILE:-${PROJECT_ROOT}/.env}"
 NGINX_TEMPLATE="${NGINX_TEMPLATE:-${PROJECT_ROOT}/deploy/nginx/default.conf.template}"
 NGINX_RUNTIME_DIR="${NGINX_RUNTIME_DIR:-${PROJECT_ROOT}/deploy/runtime/nginx}"
 NGINX_CONF="${NGINX_CONF:-${NGINX_RUNTIME_DIR}/default.conf}"
@@ -150,7 +150,7 @@ echo "Target service: ${target_service}"
 echo "Image: ${APP_IMAGE}:${APP_IMAGE_TAG}"
 
 login_to_registry_if_configured
-"${COMPOSE[@]}" up -d db
+"${COMPOSE[@]}" up -d --no-recreate db
 "${COMPOSE[@]}" pull "${target_service}"
 "${COMPOSE[@]}" up -d --no-deps "${target_service}"
 

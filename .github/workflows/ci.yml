@@ -118,6 +118,14 @@ jobs:
           test -n "$PROD_APP_DIR"
           test -n "$SPRING_DATASOURCE_PASSWORD"
           test -n "$MARIADB_ROOT_PASSWORD"
+          test -n "$JWT_SECRET"
+          test -n "$JWT_ACCESS_TOKEN_EXPIRATION"
+          test -n "$JWT_REFRESH_TOKEN_EXPIRATION"
+          test -n "$GOOGLE_OAUTH_CLIENT_ID"
+          test -n "$GOOGLE_OAUTH_CLIENT_SECRET"
+          test -n "$ADMIN_PASSWORD"
+          test -n "$FRONTEND_URL"
+          test -n "$FRONTEND_DOMAIN"
 
           if [ -z "${PROD_SSH_PRIVATE_KEY:-}" ]; then
             echo "Set PROD_SSH_PRIVATE_KEY in DEPLOY_ENV_FILE." >&2
@@ -152,11 +160,11 @@ jobs:
             }
             /^(PROD_SSH_|PROD_APP_DIR=|DEPLOY_ENV_FILE=|APP_IMAGE=|APP_IMAGE_TAG=)/ { next }
             { print }
-          ' .deploy-env/.env > .deploy-env/.env.production
+          ' .deploy-env/.env > .deploy-env/server.env
           {
             printf 'APP_IMAGE=%s\n' "$REQUESTED_APP_IMAGE"
             printf 'APP_IMAGE_TAG=%s\n' "$REQUESTED_APP_IMAGE_TAG"
-          } >> .deploy-env/.env.production
+          } >> .deploy-env/server.env
 
       - name: Configure SSH
         run: |
@@ -178,13 +186,13 @@ jobs:
           PROD_SSH_PORT="${PROD_SSH_PORT:-22}"
 
           ssh -i ~/.ssh/prod_key -p "$PROD_SSH_PORT" "$PROD_SSH_USER@$PROD_SSH_HOST" \
-            "mkdir -p '$PROD_APP_DIR/deploy'"
+            "mkdir -p '$PROD_APP_DIR'"
           scp -i ~/.ssh/prod_key -P "$PROD_SSH_PORT" \
-            .deploy-env/.env.production \
-            "$PROD_SSH_USER@$PROD_SSH_HOST:$PROD_APP_DIR/deploy/.env.production"
+            .deploy-env/server.env \
+            "$PROD_SSH_USER@$PROD_SSH_HOST:$PROD_APP_DIR/.env"
 
           ssh -i ~/.ssh/prod_key -p "$PROD_SSH_PORT" "$PROD_SSH_USER@$PROD_SSH_HOST" \
-            "chmod 600 '$PROD_APP_DIR/deploy/.env.production'"
+            "chmod 600 '$PROD_APP_DIR/.env'"
 
       - name: Deploy over SSH
         env:

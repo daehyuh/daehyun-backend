@@ -5,22 +5,22 @@ PROJECT_NAME="${PROJECT_NAME:-daehyun-backend}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-PRODUCTION_ENV_FILE="${PRODUCTION_ENV_FILE:-${PROJECT_ROOT}/deploy/.env.production}"
+ENV_FILE="${ENV_FILE:-${PROJECT_ROOT}/.env}"
 APP_COMPOSE_FILE="${APP_COMPOSE_FILE:-${PROJECT_ROOT}/docker-compose.bluegreen.yml}"
 MONITORING_COMPOSE_FILE="${MONITORING_COMPOSE_FILE:-${PROJECT_ROOT}/docker-compose.monitoring.yml}"
 
 cd "${PROJECT_ROOT}"
 
-if [[ -f "${PRODUCTION_ENV_FILE}" ]]; then
+if [[ -f "${ENV_FILE}" ]]; then
   set -a
   # shellcheck disable=SC1090
-  source "${PRODUCTION_ENV_FILE}"
+  source "${ENV_FILE}"
   set +a
 fi
 
 ENABLE_MONITORING="${ENABLE_MONITORING:-false}"
 if [[ "${ENABLE_MONITORING}" != "true" ]]; then
-  echo "Skipping monitoring stack. Set ENABLE_MONITORING=true in deploy/.env.production to enable it."
+  echo "Skipping monitoring stack. Set ENABLE_MONITORING=true in .env to enable it."
   exit 0
 fi
 
