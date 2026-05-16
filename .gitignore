@@ -38,7 +38,10 @@ out/
 
 ### properties ###
 src/main/resources/*.properties
+.env
+.env.*
+!.env.example
 /image/*
-deploy/.env.production
-deploy/.env.monitoring
+deploy/.env
+deploy/.env.*
 deploy/runtime/

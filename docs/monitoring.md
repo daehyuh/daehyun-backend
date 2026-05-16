@@ -14,36 +14,35 @@ Prometheus collects metrics. Grafana displays them. `node-exporter` exposes VM m
 
 ## First-Time Setup
 
-Create the monitoring environment file on the production server:
+Monitoring uses the same production environment file as the app:
 
 ```bash
-cp deploy/.env.monitoring.example deploy/.env.monitoring
-vi deploy/.env.monitoring
+cp .env.example .env
+vi .env
 ```
 
-Set a real value for:
+For CI/CD deployments, store the full file contents in the GitHub Actions secret `DEPLOY_ENV_FILE`. The workflow writes the non-SSH values to `deploy/.env.production` on the server before running deployment scripts.
+
+The minimal file only needs:
 
 ```text
-GRAFANA_ADMIN_PASSWORD
+ENABLE_MONITORING=true
+GRAFANA_ADMIN_PASSWORD=<strong-password>
 ```
+
+All other monitoring values have defaults. Add them only when you need to override the bind address, port, retention, or Docker log rotation.
 
 ## Start Monitoring
 
 Run the monitoring stack with the blue-green production stack:
 
 ```bash
-set -a
-source deploy/.env.production
-source deploy/.env.monitoring
-set +a
-
-docker compose -p daehyun-backend \
-  -f docker-compose.bluegreen.yml \
-  -f docker-compose.monitoring.yml \
-  up -d prometheus grafana alertmanager node-exporter cadvisor
+bash deploy/deploy-monitoring.sh
 ```
 
 Grafana and Prometheus bind to `127.0.0.1` by default, so they are not public.
+
+CI/CD also runs `deploy/deploy-monitoring.sh` after the application deployment. It only starts the stack when `ENABLE_MONITORING=true`.
 
 ## Access Grafana
 
@@ -75,7 +74,7 @@ http://localhost:9090
 
 ## Log Rotation
 
-All Docker Compose services now use json-file log rotation:
+All Docker Compose services now use json-file log rotation by default:
 
 ```text
 DOCKER_LOG_MAX_SIZE=10m
@@ -85,6 +84,8 @@ DOCKER_LOG_MAX_FILE=5
 This prevents Docker container logs from growing without a limit.
 
 Existing containers need to be recreated before the new logging policy applies.
+
+Override these values in `DEPLOY_ENV_FILE` only if the defaults are not enough.
 
 ## Alerts
 
