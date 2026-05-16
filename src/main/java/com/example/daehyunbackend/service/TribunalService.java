@@ -522,7 +522,8 @@ public class TribunalService {
                 comment.getTribunalCase(),
                 comment.getAuthor()
         ).orElseGet(() -> createAnonymousAuthor(comment.getTribunalCase(), comment.getAuthor()));
-        return TribunalAuthorResponse.anonymous(anonymousAuthor.getAnonymousNo(), mine);
+        Integer rankPoint = resolveAuthorProfile(comment.getAuthor()).rankPoint();
+        return TribunalAuthorResponse.anonymous(anonymousAuthor.getAnonymousNo(), rankPoint, mine);
     }
 
     private TribunalCaseAnonymousAuthor createAnonymousAuthor(TribunalCase tribunalCase, User user) {

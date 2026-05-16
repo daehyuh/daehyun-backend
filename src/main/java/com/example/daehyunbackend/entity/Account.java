@@ -44,4 +44,9 @@ public class Account {
     @JsonIgnore
     @OneToMany(mappedBy = "account")
     private List<Record> record;
+
+    public void linkTo(User user, String secretKey) {
+        this.user = user;
+        this.secretKey = secretKey;
+    }
 }

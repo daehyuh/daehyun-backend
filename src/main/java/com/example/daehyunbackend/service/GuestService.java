@@ -98,9 +98,12 @@ public class GuestService {
 
                         Account account = accountRepository.findByAccountId(commentData.getUser_id());
                         System.out.println("account = " + account);
-                        if (account != null) {
+                        if (account != null && account.getUser() != null) {
                             guestRepository.delete(guest);
                             continue;
+                        } else if (account != null) {
+                            account.linkTo(guest.getUser(), null);
+                            accountRepository.save(account);
                         } else {
                             Account ac = Account.builder()
                                     .user(guest.getUser())
@@ -111,6 +114,7 @@ public class GuestService {
                             accountRepository.save(ac);
 
                         }
+                        guestRepository.delete(guest);
                     }
                 }
             }

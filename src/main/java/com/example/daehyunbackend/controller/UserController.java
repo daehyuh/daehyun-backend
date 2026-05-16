@@ -38,7 +38,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -182,14 +181,13 @@ public class UserController {
         }
 
 
-        Account account = Account.builder()
-                .accountId(userId)
-                .user(user)
-                .createdAt(LocalDateTime.now())
-                .secretKey(code)
-                .build();
-
-        accountService.save(account);
+        Account account;
+        try {
+            account = accountService.linkAccount(userId, user, code);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new com.example.daehyunbackend.response.ApiResponse<>(false, null, e.getMessage()));
+        }
 
         UserDataResponse userDataResponse = null;
         try {
