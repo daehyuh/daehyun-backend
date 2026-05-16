@@ -10,4 +10,6 @@ import java.util.List;
 @Repository
 public interface TribunalCaseCafeLinkRepository extends JpaRepository<TribunalCaseCafeLink, Long> {
     List<TribunalCaseCafeLink> findByTribunalCaseOrderByIdAsc(TribunalCase tribunalCase);
+
+    void deleteByTribunalCase(TribunalCase tribunalCase);
 }

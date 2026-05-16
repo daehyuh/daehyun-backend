@@ -88,6 +88,15 @@ public class TribunalController {
         ));
     }
 
+    @DeleteMapping("/{caseId}")
+    public ResponseEntity<ApiResponse<Void>> deleteCase(
+            Authentication authentication,
+            @PathVariable Long caseId
+    ) {
+        tribunalService.deleteCase(caseId, currentUser(authentication));
+        return ResponseEntity.ok(new ApiResponse<>(true, null, "사건 삭제 성공"));
+    }
+
     @PostMapping("/{caseId}/votes")
     public ResponseEntity<ApiResponse<TribunalVoteSummaryResponse>> vote(
             Authentication authentication,

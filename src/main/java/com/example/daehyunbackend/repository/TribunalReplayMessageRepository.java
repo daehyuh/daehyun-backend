@@ -10,4 +10,6 @@ import java.util.List;
 @Repository
 public interface TribunalReplayMessageRepository extends JpaRepository<TribunalReplayMessage, Long> {
     List<TribunalReplayMessage> findByTribunalCaseOrderBySequenceNoAsc(TribunalCase tribunalCase);
+
+    void deleteByTribunalCase(TribunalCase tribunalCase);
 }

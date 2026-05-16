@@ -14,4 +14,6 @@ public interface TribunalCaseVoteRepository extends JpaRepository<TribunalCaseVo
     Optional<TribunalCaseVote> findByTribunalCaseAndVoter(TribunalCase tribunalCase, User voter);
 
     long countByTribunalCaseAndVerdict(TribunalCase tribunalCase, TribunalVerdict verdict);
+
+    void deleteByTribunalCase(TribunalCase tribunalCase);
 }

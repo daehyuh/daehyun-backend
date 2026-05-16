@@ -187,6 +187,26 @@ public class TribunalService {
     }
 
     @Transactional
+    public void deleteCase(Long caseId, User user) {
+        requireAdmin(user);
+        TribunalCase tribunalCase = findCase(caseId);
+        List<TribunalCaseComment> comments = commentRepository.findByTribunalCaseOrderByIdDesc(tribunalCase);
+
+        if (!comments.isEmpty()) {
+            commentLikeRepository.deleteByCommentIn(comments);
+            commentRepository.detachParentsByTribunalCase(tribunalCase);
+            commentRepository.deleteByTribunalCase(tribunalCase);
+        }
+
+        anonymousAuthorRepository.deleteByTribunalCase(tribunalCase);
+        voteRepository.deleteByTribunalCase(tribunalCase);
+        viewRepository.deleteByTribunalCase(tribunalCase);
+        replayMessageRepository.deleteByTribunalCase(tribunalCase);
+        cafeLinkRepository.deleteByTribunalCase(tribunalCase);
+        tribunalCaseRepository.delete(tribunalCase);
+    }
+
+    @Transactional
     public TribunalCommentResponse addComment(Long caseId, TribunalCommentRequest request, User author) {
         requireAccountVerified(author);
         String content = normalizeRequired(request == null ? null : request.content(), "댓글 내용을 입력해주세요.");
@@ -305,6 +325,12 @@ public class TribunalService {
     private void requireAccountVerified(User user) {
         if (user == null || !accountRepository.existsByUser(user)) {
             throw new AccessDeniedException("계정 인증 후 이용할 수 있습니다.");
+        }
+    }
+
+    private void requireAdmin(User user) {
+        if (user == null || user.getRole() != Role.ROLE_ADMIN) {
+            throw new AccessDeniedException("관리자만 사건을 삭제할 수 있습니다.");
         }
     }
 
