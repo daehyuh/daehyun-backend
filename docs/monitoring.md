@@ -21,7 +21,7 @@ cp .env.example .env
 vi .env
 ```
 
-For CI/CD deployments, store the full file contents in the GitHub Actions secret `DEPLOY_ENV_FILE`. The workflow writes the non-SSH values to `deploy/.env.production` on the server before running deployment scripts.
+For CI/CD deployments, store the full file contents in the GitHub Actions secret `DEPLOY_ENV_FILE`. The workflow writes the non-SSH values to `.env` on the server before running deployment scripts.
 
 The minimal file only needs:
 
