@@ -189,4 +189,21 @@ jobs:
           PROD_SSH_PORT="${PROD_SSH_PORT:-22}"
 
           ssh -i ~/.ssh/prod_key -p "$PROD_SSH_PORT" "$PROD_SSH_USER@$PROD_SSH_HOST" \
-            "cd '$PROD_APP_DIR' && git fetch origin main && git checkout main && git pull --ff-only origin main && APP_IMAGE='$APP_IMAGE' APP_IMAGE_TAG='$APP_IMAGE_TAG' bash deploy/deploy-bluegreen.sh && bash deploy/apply-host-nginx.sh && bash deploy/deploy-monitoring.sh"
+            "PROD_APP_DIR='$PROD_APP_DIR' APP_IMAGE='$APP_IMAGE' APP_IMAGE_TAG='$APP_IMAGE_TAG' bash -se" <<'REMOTE_DEPLOY'
+          set -Eeuo pipefail
+
+          cd "$PROD_APP_DIR"
+          git fetch origin main
+          git checkout main
+
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            stash_message="ci pre-deploy tracked changes $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git stash push -m "$stash_message" -- .
+            echo "Stashed local tracked changes before deploy: $stash_message"
+          fi
+
+          git pull --ff-only origin main
+          APP_IMAGE="$APP_IMAGE" APP_IMAGE_TAG="$APP_IMAGE_TAG" bash deploy/deploy-bluegreen.sh
+          bash deploy/apply-host-nginx.sh
+          bash deploy/deploy-monitoring.sh
+          REMOTE_DEPLOY
