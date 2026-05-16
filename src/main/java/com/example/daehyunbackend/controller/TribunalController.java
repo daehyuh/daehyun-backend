@@ -55,10 +55,10 @@ public class TribunalController {
             Authentication authentication,
             @RequestBody TribunalReplayPreviewRequest request
     ) {
-        currentUser(authentication);
+        User user = currentUser(authentication);
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
-                tribunalService.previewReplay(request),
+                tribunalService.previewReplay(request, user),
                 "리플레이 확인 성공"
         ));
     }

@@ -1,6 +1,7 @@
 package com.example.daehyunbackend.response;
 
 import com.example.daehyunbackend.entity.TribunalCaseComment;
+import com.example.daehyunbackend.entity.TribunalVerdict;
 
 import java.time.LocalDateTime;
 
@@ -8,6 +9,7 @@ public record TribunalCommentResponse(
         Long id,
         Long parentId,
         TribunalAuthorResponse author,
+        TribunalVerdict authorVerdict,
         String content,
         boolean deleted,
         long likeCount,
@@ -18,6 +20,7 @@ public record TribunalCommentResponse(
     public static TribunalCommentResponse from(
             TribunalCaseComment comment,
             TribunalAuthorResponse author,
+            TribunalVerdict authorVerdict,
             long likeCount,
             boolean likedByMe
     ) {
@@ -26,6 +29,7 @@ public record TribunalCommentResponse(
                 comment.getId(),
                 parentId,
                 author,
+                authorVerdict,
                 comment.isDeleted() ? null : comment.getContent(),
                 comment.isDeleted(),
                 likeCount,

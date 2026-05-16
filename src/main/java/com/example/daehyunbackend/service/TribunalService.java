@@ -69,6 +69,7 @@ public class TribunalService {
     @Transactional
     public TribunalCaseDetailResponse createCase(TribunalCaseCreateRequest request, User author) {
         validateCreateRequest(request);
+        requireAccountVerified(author);
 
         TribunalReplayScraper.ReplayParseResult replay = replayScraper.scrape(request.replayUrl());
         String playerNickname = normalizeRequired(request.nickname(), "닉네임을 입력해주세요.");
@@ -96,8 +97,9 @@ public class TribunalService {
         return getCase(tribunalCase.getId(), author);
     }
 
-    public TribunalReplayPreviewResponse previewReplay(TribunalReplayPreviewRequest request) {
+    public TribunalReplayPreviewResponse previewReplay(TribunalReplayPreviewRequest request, User user) {
         String replayUrl = normalizeRequired(request == null ? null : request.replayUrl(), "리플레이 링크를 입력해주세요.");
+        requireAccountVerified(user);
         TribunalReplayScraper.ReplayParseResult replay = replayScraper.scrape(replayUrl);
 
         return new TribunalReplayPreviewResponse(
@@ -180,6 +182,7 @@ public class TribunalService {
 
     @Transactional
     public TribunalCommentResponse addComment(Long caseId, TribunalCommentRequest request, User author) {
+        requireAccountVerified(author);
         String content = normalizeRequired(request == null ? null : request.content(), "댓글 내용을 입력해주세요.");
         TribunalCase tribunalCase = findCase(caseId);
         TribunalCaseComment parent = null;
@@ -208,6 +211,7 @@ public class TribunalService {
 
     @Transactional
     public TribunalCommentResponse updateComment(Long commentId, TribunalCommentRequest request, User user) {
+        requireAccountVerified(user);
         TribunalCaseComment comment = findComment(commentId);
         requireCommentOwnerOrAdmin(comment, user);
         if (comment.isDeleted()) {
@@ -224,6 +228,7 @@ public class TribunalService {
 
     @Transactional
     public void deleteComment(Long commentId, User user) {
+        requireAccountVerified(user);
         TribunalCaseComment comment = findComment(commentId);
         requireCommentOwnerOrAdmin(comment, user);
         comment.setDeleted(true);
@@ -233,6 +238,7 @@ public class TribunalService {
 
     @Transactional
     public TribunalCommentResponse toggleCommentLike(Long commentId, User user) {
+        requireAccountVerified(user);
         TribunalCaseComment comment = findComment(commentId);
         if (comment.isDeleted()) {
             throw new IllegalArgumentException("삭제된 댓글에는 인정할 수 없습니다.");
@@ -253,6 +259,12 @@ public class TribunalService {
         normalizeRequired(request.replayUrl(), "리플레이 링크를 입력해주세요.");
         normalizeRequired(request.nickname(), "닉네임을 입력해주세요.");
         normalizeRequired(request.pick(), "픽을 입력해주세요.");
+    }
+
+    private void requireAccountVerified(User user) {
+        if (user == null || !accountRepository.existsByUser(user)) {
+            throw new AccessDeniedException("계정 인증 후 이용할 수 있습니다.");
+        }
     }
 
     private void validateSelectedPlayer(
@@ -369,9 +381,13 @@ public class TribunalService {
 
     private TribunalCommentResponse commentResponse(TribunalCaseComment comment, User viewer) {
         boolean likedByMe = viewer != null && commentLikeRepository.findByCommentAndUser(comment, viewer).isPresent();
+        TribunalVerdict authorVerdict = voteRepository.findByTribunalCaseAndVoter(comment.getTribunalCase(), comment.getAuthor())
+                .map(TribunalCaseVote::getVerdict)
+                .orElse(null);
         return TribunalCommentResponse.from(
                 comment,
                 authorResponse(comment.getAuthor(), viewer, Boolean.TRUE.equals(comment.getAnonymous())),
+                authorVerdict,
                 commentLikeRepository.countByComment(comment),
                 likedByMe
         );
@@ -382,25 +398,39 @@ public class TribunalService {
         if (anonymous) {
             return TribunalAuthorResponse.anonymous(mine);
         }
-        return TribunalAuthorResponse.visible(resolveNickname(author), mine);
+        AuthorProfile profile = resolveAuthorProfile(author);
+        return TribunalAuthorResponse.visible(profile.nickname(), profile.rankPoint(), mine);
     }
 
-    private String resolveNickname(User user) {
+    private AuthorProfile resolveAuthorProfile(User user) {
         if (user == null) {
-            return "NICKNAME_UNLINKED";
+            return new AuthorProfile("NICKNAME_UNLINKED", null);
         }
 
+        Optional<Record> latestRecord = latestRecord(user);
+        String nickname = latestRecord
+                .map(Record::getNICKNAME)
+                .filter(value -> value != null && !value.isBlank())
+                .orElse("NICKNAME_UNLINKED");
+        Integer rankPoint = latestRecord
+                .map(Record::getRankpoint)
+                .orElse(null);
+
+        return new AuthorProfile(nickname, rankPoint);
+    }
+
+    private Optional<Record> latestRecord(User user) {
         List<Account> accounts = accountRepository.findAllByUser(user);
         return accounts.stream()
                 .map(recordRepository::findTopByAccountOrderByDateDesc)
                 .flatMap(Optional::stream)
-                .filter(record -> record.getNICKNAME() != null && !record.getNICKNAME().isBlank())
                 .max(Comparator.comparing(
                         Record::getDate,
                         Comparator.nullsFirst(Comparator.naturalOrder())
-                ))
-                .map(Record::getNICKNAME)
-                .orElse("NICKNAME_UNLINKED");
+                ));
+    }
+
+    private record AuthorProfile(String nickname, Integer rankPoint) {
     }
 
     private TribunalCase findCase(Long caseId) {
