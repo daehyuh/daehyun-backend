@@ -23,17 +23,14 @@ vi deploy/.env.monitoring
 
 For CI/CD deployments, store the full file contents in the GitHub Actions secret `MONITORING_ENV_FILE`. The workflow writes it to `deploy/.env.monitoring` on the server before running deployment scripts.
 
-Set a real value for:
-
-```text
-GRAFANA_ADMIN_PASSWORD
-```
-
-Enable the stack:
+The minimal file only needs:
 
 ```text
 ENABLE_MONITORING=true
+GRAFANA_ADMIN_PASSWORD=<strong-password>
 ```
+
+All other monitoring values have defaults. Add them only when you need to override the bind address, port, retention, or Docker log rotation.
 
 ## Start Monitoring
 
@@ -77,7 +74,7 @@ http://localhost:9090
 
 ## Log Rotation
 
-All Docker Compose services now use json-file log rotation:
+All Docker Compose services now use json-file log rotation by default:
 
 ```text
 DOCKER_LOG_MAX_SIZE=10m
@@ -87,6 +84,8 @@ DOCKER_LOG_MAX_FILE=5
 This prevents Docker container logs from growing without a limit.
 
 Existing containers need to be recreated before the new logging policy applies.
+
+Override these values in `deploy/.env.monitoring` only if the defaults are not enough.
 
 ## Alerts
 

@@ -23,8 +23,11 @@ Set real values for:
 - `SPRING_DATASOURCE_PASSWORD`
 - `MARIADB_ROOT_PASSWORD`
 - `PUBLIC_PORT`
-- `APP_IMAGE`
-- `APP_IMAGE_TAG`
+
+CI/CD passes `APP_IMAGE` and `APP_IMAGE_TAG` automatically. Add them to the env file only for manual deployments or custom registries.
+
+The host Nginx values also have production defaults for `api.xn--vk1b177d.com`. Add these only when the server path or domain differs:
+
 - `HOST_NGINX_SERVER_NAME`
 - `HOST_NGINX_SSL_CERT`
 - `HOST_NGINX_SSL_KEY`
