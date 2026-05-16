@@ -1,16 +1,15 @@
 package com.example.daehyunbackend.response;
 
-import com.example.daehyunbackend.entity.User;
-
 public record TribunalAuthorResponse(
-        Long id,
-        String name,
-        String avatarUrl
+        String nickname,
+        boolean anonymous,
+        boolean mine
 ) {
-    public static TribunalAuthorResponse from(User user) {
-        if (user == null) {
-            return null;
-        }
-        return new TribunalAuthorResponse(user.getId(), user.getName(), user.getAvatarUrl());
+    public static TribunalAuthorResponse visible(String nickname, boolean mine) {
+        return new TribunalAuthorResponse(nickname, false, mine);
+    }
+
+    public static TribunalAuthorResponse anonymous(boolean mine) {
+        return new TribunalAuthorResponse("익명", true, mine);
     }
 }

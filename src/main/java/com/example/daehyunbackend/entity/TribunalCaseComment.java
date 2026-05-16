@@ -48,6 +48,9 @@ public class TribunalCaseComment {
     @Column(name = "content", nullable = false, length = 4000)
     private String content;
 
+    @Column(name = "anonymous")
+    private Boolean anonymous;
+
     @Column(name = "deleted", nullable = false)
     private boolean deleted;
 
@@ -62,6 +65,7 @@ public class TribunalCaseComment {
             User author,
             TribunalCaseComment parent,
             String content,
+            boolean anonymous,
             LocalDateTime now
     ) {
         TribunalCaseComment comment = new TribunalCaseComment();
@@ -69,6 +73,7 @@ public class TribunalCaseComment {
         comment.author = author;
         comment.parent = parent;
         comment.content = content;
+        comment.anonymous = anonymous;
         comment.createdAt = now;
         comment.updatedAt = now;
         return comment;

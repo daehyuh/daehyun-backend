@@ -17,6 +17,7 @@ public record TribunalCommentResponse(
 ) {
     public static TribunalCommentResponse from(
             TribunalCaseComment comment,
+            TribunalAuthorResponse author,
             long likeCount,
             boolean likedByMe
     ) {
@@ -24,7 +25,7 @@ public record TribunalCommentResponse(
         return new TribunalCommentResponse(
                 comment.getId(),
                 parentId,
-                TribunalAuthorResponse.from(comment.getAuthor()),
+                author,
                 comment.isDeleted() ? null : comment.getContent(),
                 comment.isDeleted(),
                 likeCount,
