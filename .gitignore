@@ -40,4 +40,5 @@ out/
 src/main/resources/*.properties
 /image/*
 deploy/.env.production
+deploy/.env.monitoring
 deploy/runtime/
