@@ -36,6 +36,7 @@ The host Nginx values also have production defaults for `api.xn--vk1b177d.com`. 
 - `HOST_NGINX_SSL_CERT`
 - `HOST_NGINX_SSL_KEY`
 - `HOST_NGINX_CONF_PATH`
+- `HOST_NGINX_BACKUP_DIR`
 
 The production compose file binds MariaDB to `127.0.0.1` by default:
 
@@ -108,10 +109,11 @@ HOST_NGINX_SERVER_NAME=api.xn--vk1b177d.com
 HOST_NGINX_UPSTREAM=http://127.0.0.1:18080
 HOST_NGINX_SSL_CERT=/etc/letsencrypt/live/api.xn--vk1b177d.com/fullchain.pem
 HOST_NGINX_SSL_KEY=/etc/letsencrypt/live/api.xn--vk1b177d.com/privkey.pem
-HOST_NGINX_CONF_PATH=/etc/nginx/conf.d/api.xn--vk1b177d.com.conf
+HOST_NGINX_CONF_PATH=/etc/nginx/sites-enabled/default
+HOST_NGINX_BACKUP_DIR=/etc/nginx/codex-backups
 ```
 
-If the current config already lives under `/etc/nginx/sites-available`, set `HOST_NGINX_CONF_PATH` to that exact file path to avoid duplicate server blocks.
+If `HOST_NGINX_CONF_PATH` is not set, the script first tries to find an existing host Nginx config with the same `server_name`. Backups are written outside Nginx include directories so `*.bak` files do not become active server blocks.
 
 ## Rollback
 
