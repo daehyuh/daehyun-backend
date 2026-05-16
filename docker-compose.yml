@@ -1,3 +1,9 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "${DOCKER_LOG_MAX_SIZE:-10m}"
+    max-file: "${DOCKER_LOG_MAX_FILE:-5}"
+
 services:
   app:
     build: .
@@ -6,13 +12,16 @@ services:
     depends_on:
       - db
     volumes:
-      - ./image:/upload/images  # 호스트 image/ 폴더를 컨테이너와 연결
+      - ./image:/upload/images
     environment:
       SPRING_DATASOURCE_URL: jdbc:mariadb://db:3306/daehyun
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: 1234
-      IMAGE_UPLOAD_DIR: /upload/images  # Spring에서 사용할 업로드 디렉토리
+      IMAGE_UPLOAD_DIR: /upload/images
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,prometheus
       TZ: Asia/Seoul
+    logging: *default-logging
+
   db:
     image: mariadb:10.6
     restart: always
@@ -23,6 +32,7 @@ services:
       - "3306:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
+    logging: *default-logging
 
 volumes:
   mariadb_data:

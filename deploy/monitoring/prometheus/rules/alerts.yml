@@ -1,0 +1,40 @@
+groups:
+  - name: host-disk
+    rules:
+      - alert: HostDiskUsageWarning
+        expr: 100 * (1 - (node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"})) > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host root disk usage is above 80%"
+          description: "Root filesystem usage is {{ $value | printf \"%.2f\" }}%."
+
+      - alert: HostDiskUsageCritical
+        expr: 100 * (1 - (node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"})) > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Host root disk usage is above 90%"
+          description: "Root filesystem usage is {{ $value | printf \"%.2f\" }}%."
+
+  - name: app-health
+    rules:
+      - alert: SpringAppDown
+        expr: up{job=~"spring-app-.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Spring app target is down"
+          description: "{{ $labels.job }} cannot be scraped by Prometheus."
+
+      - alert: NginxOrAppHigh5xxRate
+        expr: sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Spring app 5xx responses detected"
+          description: "5xx response rate is {{ $value | printf \"%.4f\" }} req/s."

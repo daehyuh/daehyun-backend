@@ -73,6 +73,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers("/stats/**").permitAll()
                         .requestMatchers("/actuator/health/**").permitAll()
+                        .requestMatchers("/actuator/prometheus").permitAll()
                         .requestMatchers("/attach/images/**").permitAll()
                         .requestMatchers(swaggerList).permitAll()
                         .requestMatchers("/User/Account/sync").authenticated()
