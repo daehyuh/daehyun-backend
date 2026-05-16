@@ -72,6 +72,7 @@ public class SecurityConfig {
                                 "/Account/syncOneGuest/"
                         ).permitAll()
                         .requestMatchers("/stats/**").permitAll()
+                        .requestMatchers("/actuator/health/**").permitAll()
                         .requestMatchers("/attach/images/**").permitAll()
                         .requestMatchers(swaggerList).permitAll()
                         .requestMatchers("/User/Account/sync").authenticated()
