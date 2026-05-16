@@ -21,6 +21,8 @@ cp deploy/.env.monitoring.example deploy/.env.monitoring
 vi deploy/.env.monitoring
 ```
 
+For CI/CD deployments, store the full file contents in the GitHub Actions secret `MONITORING_ENV_FILE`. The workflow writes it to `deploy/.env.monitoring` on the server before running deployment scripts.
+
 Set a real value for:
 
 ```text

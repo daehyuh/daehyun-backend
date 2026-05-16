@@ -7,7 +7,8 @@ HEALTH_PATH="${HEALTH_PATH:-/actuator/health}"
 HEALTH_RETRIES="${HEALTH_RETRIES:-30}"
 HEALTH_SLEEP_SECONDS="${HEALTH_SLEEP_SECONDS:-3}"
 DRAIN_SECONDS="${DRAIN_SECONDS:-10}"
-APP_IMAGE="${APP_IMAGE:-ghcr.io/daehyuh/daehyun-backend}"
+REQUESTED_APP_IMAGE="${APP_IMAGE:-}"
+REQUESTED_APP_IMAGE_TAG="${APP_IMAGE_TAG:-}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -26,10 +27,17 @@ if [[ -f "${ENV_FILE}" ]]; then
   set +a
 fi
 
+APP_IMAGE="${REQUESTED_APP_IMAGE:-${APP_IMAGE:-ghcr.io/daehyuh/daehyun-backend}}"
+if [[ -n "${REQUESTED_APP_IMAGE_TAG}" ]]; then
+  APP_IMAGE_TAG="${REQUESTED_APP_IMAGE_TAG}"
+else
+  APP_IMAGE_TAG="${APP_IMAGE_TAG:-$(git rev-parse --short HEAD 2>/dev/null || date +%Y%m%d%H%M%S)}"
+fi
+
 export PROJECT_NAME
 export PUBLIC_PORT
 export APP_IMAGE
-export APP_IMAGE_TAG="${APP_IMAGE_TAG:-$(git rev-parse --short HEAD 2>/dev/null || date +%Y%m%d%H%M%S)}"
+export APP_IMAGE_TAG
 
 COMPOSE=(docker compose -p "${PROJECT_NAME}" -f "${COMPOSE_FILE}")
 COMPOSE_NETWORK="${PROJECT_NAME}_backend"

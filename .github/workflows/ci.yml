@@ -96,11 +96,13 @@ jobs:
           PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
           PROD_SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
           PROD_APP_DIR: ${{ secrets.PROD_APP_DIR }}
+          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
         run: |
           test -n "$PROD_SSH_HOST"
           test -n "$PROD_SSH_USER"
           test -n "$PROD_SSH_PRIVATE_KEY"
           test -n "$PROD_APP_DIR"
+          test -n "$PROD_ENV_FILE"
 
       - name: Configure SSH
         env:
@@ -112,6 +114,34 @@ jobs:
           printf '%s\n' "$PROD_SSH_PRIVATE_KEY" > ~/.ssh/prod_key
           chmod 600 ~/.ssh/prod_key
           ssh-keyscan -p "$PROD_SSH_PORT" -H "$PROD_SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Sync deployment environment files
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT || '22' }}
+          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          PROD_APP_DIR: ${{ secrets.PROD_APP_DIR }}
+          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
+          MONITORING_ENV_FILE: ${{ secrets.MONITORING_ENV_FILE }}
+        run: |
+          mkdir -p .deploy-env
+          printf '%s\n' "$PROD_ENV_FILE" > .deploy-env/.env.production
+
+          ssh -i ~/.ssh/prod_key -p "$PROD_SSH_PORT" "$PROD_SSH_USER@$PROD_SSH_HOST" \
+            "mkdir -p '$PROD_APP_DIR/deploy'"
+          scp -i ~/.ssh/prod_key -P "$PROD_SSH_PORT" \
+            .deploy-env/.env.production \
+            "$PROD_SSH_USER@$PROD_SSH_HOST:$PROD_APP_DIR/deploy/.env.production"
+
+          if [ -n "$MONITORING_ENV_FILE" ]; then
+            printf '%s\n' "$MONITORING_ENV_FILE" > .deploy-env/.env.monitoring
+            scp -i ~/.ssh/prod_key -P "$PROD_SSH_PORT" \
+              .deploy-env/.env.monitoring \
+              "$PROD_SSH_USER@$PROD_SSH_HOST:$PROD_APP_DIR/deploy/.env.monitoring"
+          fi
+
+          ssh -i ~/.ssh/prod_key -p "$PROD_SSH_PORT" "$PROD_SSH_USER@$PROD_SSH_HOST" \
+            "chmod 600 '$PROD_APP_DIR/deploy/.env.production' '$PROD_APP_DIR/deploy/.env.monitoring' 2>/dev/null || true"
 
       - name: Deploy over SSH
         env:

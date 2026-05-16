@@ -9,12 +9,14 @@ This project uses a blue-green deployment flow for production:
 
 ## First-Time Setup
 
-Create the production environment file on the server:
+Create the production environment file on the server for manual deployments:
 
 ```bash
 cp deploy/.env.production.example deploy/.env.production
 vi deploy/.env.production
 ```
+
+For CI/CD deployments, store the full file contents in the GitHub Actions secret `PROD_ENV_FILE`. The workflow writes it to `deploy/.env.production` on the server before running deployment scripts.
 
 Set real values for:
 

@@ -29,7 +29,7 @@ ghcr.io/daehyuh/daehyun-backend:latest
 
 Production deploys use the immutable `<commit-sha>` tag.
 
-If the GHCR package is private, configure these values in `deploy/.env.production` on the server:
+If the GHCR package is private, include these values in `PROD_ENV_FILE`:
 
 ```bash
 GHCR_USERNAME=<github-username>
@@ -51,15 +51,39 @@ PROD_SSH_HOST
 PROD_SSH_USER
 PROD_SSH_PRIVATE_KEY
 PROD_APP_DIR
+PROD_ENV_FILE
 ```
 
 Optional:
 
 ```text
 PROD_SSH_PORT
+MONITORING_ENV_FILE
 ```
 
-`PROD_APP_DIR` must point to the repository directory on the production server. The server must already have `deploy/.env.production` configured because that file contains production secrets and is ignored by Git.
+`PROD_APP_DIR` must point to the repository directory on the production server.
+
+`PROD_ENV_FILE` contains the full contents of `deploy/.env.production`. During deployment, GitHub Actions writes it to the production server with file mode `600`.
+
+Example:
+
+```bash
+PUBLIC_PORT=18080
+APP_IMAGE=ghcr.io/daehyuh/daehyun-backend
+SPRING_DATASOURCE_URL=jdbc:mariadb://db:3306/daehyun
+SPRING_DATASOURCE_USERNAME=root
+SPRING_DATASOURCE_PASSWORD=<secret>
+MARIADB_ROOT_PASSWORD=<secret>
+DB_BIND_ADDRESS=127.0.0.1
+APPLY_HOST_NGINX=true
+HOST_NGINX_SERVER_NAME=api.xn--vk1b177d.com
+HOST_NGINX_UPSTREAM=http://127.0.0.1:18080
+HOST_NGINX_SSL_CERT=/etc/letsencrypt/live/api.xn--vk1b177d.com/fullchain.pem
+HOST_NGINX_SSL_KEY=/etc/letsencrypt/live/api.xn--vk1b177d.com/privkey.pem
+HOST_NGINX_CONF_PATH=/etc/nginx/conf.d/api.xn--vk1b177d.com.conf
+```
+
+`MONITORING_ENV_FILE` contains the full contents of `deploy/.env.monitoring` when monitoring should be managed by CI/CD.
 
 After a merge to `main`, the deploy job connects to the production server, fast-forwards `main`, and runs:
 
