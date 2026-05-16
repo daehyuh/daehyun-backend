@@ -52,12 +52,6 @@ DEPLOY_ENV_FILE
 
 `DEPLOY_ENV_FILE` contains the full contents of `.env`. Use `.env.example` as the template.
 
-Generate `PROD_SSH_PRIVATE_KEY_B64` from the private key you use to SSH into the server:
-
-```bash
-base64 -w 0 ~/.ssh/your_private_key
-```
-
 During deployment, GitHub Actions:
 
 1. Reads SSH connection values from `DEPLOY_ENV_FILE`.
@@ -72,7 +66,9 @@ Example:
 PROD_SSH_HOST=158.179.170.118
 PROD_SSH_USER=ubuntu
 PROD_SSH_PORT=22
-PROD_SSH_PRIVATE_KEY_B64=<base64-encoded-private-key>
+PROD_SSH_PRIVATE_KEY='-----BEGIN OPENSSH PRIVATE KEY-----
+...
+-----END OPENSSH PRIVATE KEY-----'
 PROD_APP_DIR=/home/ubuntu/daehyun-backend
 
 PUBLIC_PORT=18080

@@ -111,8 +111,8 @@ jobs:
           test -n "$SPRING_DATASOURCE_PASSWORD"
           test -n "$MARIADB_ROOT_PASSWORD"
 
-          if [ -z "${PROD_SSH_PRIVATE_KEY_B64:-}" ] && [ -z "${PROD_SSH_PRIVATE_KEY:-}" ]; then
-            echo "Set PROD_SSH_PRIVATE_KEY_B64 in DEPLOY_ENV_FILE." >&2
+          if [ -z "${PROD_SSH_PRIVATE_KEY:-}" ]; then
+            echo "Set PROD_SSH_PRIVATE_KEY in DEPLOY_ENV_FILE." >&2
             exit 1
           fi
 
@@ -120,14 +120,25 @@ jobs:
             test -n "$GRAFANA_ADMIN_PASSWORD"
           fi
 
-          if [ -n "${PROD_SSH_PRIVATE_KEY_B64:-}" ]; then
-            printf '%s' "$PROD_SSH_PRIVATE_KEY_B64" | base64 -d > .deploy-env/prod_key
-          else
-            printf '%s\n' "$PROD_SSH_PRIVATE_KEY" > .deploy-env/prod_key
-          fi
+          printf '%s\n' "$PROD_SSH_PRIVATE_KEY" > .deploy-env/prod_key
           chmod 600 .deploy-env/prod_key
 
-          grep -Ev '^(PROD_SSH_|PROD_APP_DIR=|DEPLOY_ENV_FILE=)' .deploy-env/.env > .deploy-env/.env.production
+          awk '
+            /^PROD_SSH_PRIVATE_KEY=/ {
+              if ($0 ~ /^PROD_SSH_PRIVATE_KEY='\''/ && $0 !~ /'\''$/) {
+                skip_private_key = 1
+              }
+              next
+            }
+            skip_private_key {
+              if ($0 ~ /'\''$/) {
+                skip_private_key = 0
+              }
+              next
+            }
+            /^(PROD_SSH_|PROD_APP_DIR=|DEPLOY_ENV_FILE=)/ { next }
+            { print }
+          ' .deploy-env/.env > .deploy-env/.env.production
           {
             printf 'APP_IMAGE=%s\n' "$APP_IMAGE"
             printf 'APP_IMAGE_TAG=%s\n' "$APP_IMAGE_TAG"
