@@ -2,14 +2,15 @@ package com.example.daehyunbackend.response;
 
 public record TribunalAuthorResponse(
         String nickname,
+        Integer rankPoint,
         boolean anonymous,
         boolean mine
 ) {
-    public static TribunalAuthorResponse visible(String nickname, boolean mine) {
-        return new TribunalAuthorResponse(nickname, false, mine);
+    public static TribunalAuthorResponse visible(String nickname, Integer rankPoint, boolean mine) {
+        return new TribunalAuthorResponse(nickname, rankPoint, false, mine);
     }
 
-    public static TribunalAuthorResponse anonymous(boolean mine) {
-        return new TribunalAuthorResponse("익명", true, mine);
+    public static TribunalAuthorResponse anonymous(int anonymousNo, boolean mine) {
+        return new TribunalAuthorResponse("\uC775\uBA85 " + anonymousNo, null, true, mine);
     }
 }
