@@ -38,6 +38,8 @@ out/
 
 ### properties ###
 src/main/resources/*.properties
+.env.production
+.env.monitoring
 /image/*
 deploy/.env.production
 deploy/.env.monitoring
