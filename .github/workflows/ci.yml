@@ -107,70 +107,119 @@ jobs:
           test -n "$DEPLOY_ENV_FILE"
           mkdir -p .deploy-env
           printf '%s\n' "$DEPLOY_ENV_FILE" > .deploy-env/.env
-          sed -i 's/\r$//' .deploy-env/.env
+          python3 <<'PY'
+          import os
+          import re
+          import shlex
+          import subprocess
+          from pathlib import Path
 
-          set -a
-          . .deploy-env/.env
-          set +a
+          env_path = Path(".deploy-env/.env")
+          text = env_path.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
+          env_path.write_text(text, encoding="utf-8")
 
-          test -n "$PROD_SSH_HOST"
-          test -n "$PROD_SSH_USER"
-          test -n "$PROD_APP_DIR"
-          test -n "$SPRING_DATASOURCE_PASSWORD"
-          test -n "$MARIADB_ROOT_PASSWORD"
-          test -n "$JWT_SECRET"
-          test -n "$JWT_ACCESS_TOKEN_EXPIRATION"
-          test -n "$JWT_REFRESH_TOKEN_EXPIRATION"
-          test -n "$GOOGLE_OAUTH_CLIENT_ID"
-          test -n "$GOOGLE_OAUTH_CLIENT_SECRET"
-          test -n "$ADMIN_PASSWORD"
-          test -n "$FRONTEND_URL"
-          test -n "$FRONTEND_DOMAIN"
+          def parse_dotenv(source: str) -> dict[str, str]:
+              parsed: dict[str, str] = {}
+              lines = source.splitlines()
+              index = 0
+              while index < len(lines):
+                  line_number = index + 1
+                  line = lines[index]
+                  index += 1
+                  stripped = line.strip()
+                  if not stripped or stripped.startswith("#"):
+                      continue
+                  if "=" not in line:
+                      raise SystemExit(f"Invalid DEPLOY_ENV_FILE line {line_number}: expected KEY=value")
+                  key, value = line.split("=", 1)
+                  key = key.strip()
+                  value = value.strip()
+                  if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
+                      raise SystemExit(f"Invalid DEPLOY_ENV_FILE key on line {line_number}: {key}")
+                  if value.startswith("'") or value.startswith('"'):
+                      quote = value[0]
+                      chunks = [value[1:]]
+                      while not chunks[-1].endswith(quote):
+                          if index >= len(lines):
+                              raise SystemExit(f"Unterminated quoted value for {key}")
+                          chunks.append(lines[index])
+                          index += 1
+                      chunks[-1] = chunks[-1][:-1]
+                      value = "\n".join(chunks)
+                  parsed[key] = value
+              return parsed
 
-          if [ -z "${PROD_SSH_PRIVATE_KEY:-}" ]; then
-            echo "Set PROD_SSH_PRIVATE_KEY in DEPLOY_ENV_FILE." >&2
-            exit 1
-          fi
+          def required(values: dict[str, str], key: str) -> None:
+              if not values.get(key):
+                  raise SystemExit(f"Missing required DEPLOY_ENV_FILE value: {key}")
 
-          if [ "${ENABLE_MONITORING:-false}" = "true" ]; then
-            test -n "$GRAFANA_ADMIN_PASSWORD"
-          fi
+          def write_shell_env(path: Path, values: dict[str, str], keys: list[str]) -> None:
+              lines = []
+              for key in keys:
+                  value = values.get(key, "")
+                  if "\n" in value:
+                      raise SystemExit(f"{key} cannot contain newlines in ci.env")
+                  lines.append(f"export {key}={shlex.quote(value)}")
+              path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
-          printf '%s\n' "$PROD_SSH_PRIVATE_KEY" \
-            | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e '/^$/d' \
-            > .deploy-env/prod_key
-          chmod 600 .deploy-env/prod_key
-          if ! ssh-keygen -y -f .deploy-env/prod_key >/dev/null 2>&1; then
-            echo "PROD_SSH_PRIVATE_KEY is not a valid private key. Paste the private key file contents, not the ssh-rsa/ssh-ed25519 public key." >&2
-            exit 1
-          fi
+          def format_env_line(key: str, value: str) -> str:
+              if "\n" in value:
+                  raise SystemExit(f"{key} cannot contain newlines in server .env")
+              return f"{key}={shlex.quote(value)}\n"
 
-          awk '
-            /^PROD_SSH_PRIVATE_KEY=/ {
-              if ($0 ~ /^PROD_SSH_PRIVATE_KEY='\''/ && $0 !~ /'\''$/) {
-                skip_private_key = 1
-              }
-              next
-            }
-            skip_private_key {
-              if ($0 ~ /'\''$/) {
-                skip_private_key = 0
-              }
-              next
-            }
-            /^(PROD_SSH_|PROD_APP_DIR=|DEPLOY_ENV_FILE=|APP_IMAGE=|APP_IMAGE_TAG=)/ { next }
-            { print }
-          ' .deploy-env/.env > .deploy-env/server.env
-          {
-            printf 'APP_IMAGE=%s\n' "$REQUESTED_APP_IMAGE"
-            printf 'APP_IMAGE_TAG=%s\n' "$REQUESTED_APP_IMAGE_TAG"
-          } >> .deploy-env/server.env
+          values = parse_dotenv(text)
+          for key in [
+              "PROD_SSH_HOST",
+              "PROD_SSH_USER",
+              "PROD_APP_DIR",
+              "PROD_SSH_PRIVATE_KEY",
+              "SPRING_DATASOURCE_PASSWORD",
+              "MARIADB_ROOT_PASSWORD",
+              "JWT_SECRET",
+              "JWT_ACCESS_TOKEN_EXPIRATION",
+              "JWT_REFRESH_TOKEN_EXPIRATION",
+              "GOOGLE_OAUTH_CLIENT_ID",
+              "GOOGLE_OAUTH_CLIENT_SECRET",
+              "ADMIN_PASSWORD",
+              "FRONTEND_URL",
+              "FRONTEND_DOMAIN",
+          ]:
+              required(values, key)
+
+          if values.get("ENABLE_MONITORING", "false") == "true":
+              required(values, "GRAFANA_ADMIN_PASSWORD")
+
+          prod_key = "\n".join(line.strip() for line in values["PROD_SSH_PRIVATE_KEY"].splitlines() if line.strip()) + "\n"
+          prod_key_path = Path(".deploy-env/prod_key")
+          prod_key_path.write_text(prod_key, encoding="utf-8")
+          prod_key_path.chmod(0o600)
+          if subprocess.run(["ssh-keygen", "-y", "-f", str(prod_key_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0:
+              raise SystemExit("PROD_SSH_PRIVATE_KEY is not a valid private key. Paste the private key file contents, not the public key.")
+
+          values.setdefault("PROD_SSH_PORT", "22")
+          write_shell_env(
+              Path(".deploy-env/ci.env"),
+              values,
+              ["PROD_SSH_HOST", "PROD_SSH_USER", "PROD_SSH_PORT", "PROD_APP_DIR"],
+          )
+
+          server_env = []
+          for key, value in values.items():
+              if (
+                  key.startswith("PROD_SSH_")
+                  or key in {"PROD_APP_DIR", "DEPLOY_ENV_FILE", "APP_IMAGE", "APP_IMAGE_TAG"}
+              ):
+                  continue
+              server_env.append(format_env_line(key, value))
+          server_env.append(format_env_line("APP_IMAGE", os.environ["APP_IMAGE"]))
+          server_env.append(format_env_line("APP_IMAGE_TAG", os.environ["APP_IMAGE_TAG"]))
+          Path(".deploy-env/server.env").write_text("".join(server_env), encoding="utf-8")
+          print("Deployment environment parsed and validated.")
+          PY
 
       - name: Configure SSH
         run: |
-          set -a
-          . .deploy-env/.env
-          set +a
+          . .deploy-env/ci.env
           PROD_SSH_PORT="${PROD_SSH_PORT:-22}"
 
           mkdir -p ~/.ssh
@@ -180,9 +229,7 @@ jobs:
 
       - name: Sync deployment environment file
         run: |
-          set -a
-          . .deploy-env/.env
-          set +a
+          . .deploy-env/ci.env
           PROD_SSH_PORT="${PROD_SSH_PORT:-22}"
 
           ssh -i ~/.ssh/prod_key -p "$PROD_SSH_PORT" "$PROD_SSH_USER@$PROD_SSH_HOST" \
@@ -202,9 +249,7 @@ jobs:
           REQUESTED_APP_IMAGE="$APP_IMAGE"
           REQUESTED_APP_IMAGE_TAG="$APP_IMAGE_TAG"
 
-          set -a
-          . .deploy-env/.env
-          set +a
+          . .deploy-env/ci.env
           PROD_SSH_PORT="${PROD_SSH_PORT:-22}"
 
           ssh -i ~/.ssh/prod_key -p "$PROD_SSH_PORT" "$PROD_SSH_USER@$PROD_SSH_HOST" \
