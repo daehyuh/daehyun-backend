@@ -10,7 +10,7 @@ public record TribunalAuthorResponse(
         return new TribunalAuthorResponse(nickname, rankPoint, false, mine);
     }
 
-    public static TribunalAuthorResponse anonymous(boolean mine) {
-        return new TribunalAuthorResponse("\uC775\uBA85", null, true, mine);
+    public static TribunalAuthorResponse anonymous(int anonymousNo, boolean mine) {
+        return new TribunalAuthorResponse("\uC775\uBA85 " + anonymousNo, null, true, mine);
     }
 }
