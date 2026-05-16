@@ -1,6 +1,7 @@
 package com.example.daehyunbackend.response;
 
 import com.example.daehyunbackend.entity.TribunalCase;
+import com.example.daehyunbackend.support.MafiaJobNameResolver;
 
 import java.time.LocalDateTime;
 
@@ -11,6 +12,7 @@ public record TribunalCaseSummaryResponse(
         String replayLang,
         String playerNickname,
         String playerPick,
+        String playerPickName,
         String description,
         String winnerTeam,
         String gameType,
@@ -25,6 +27,7 @@ public record TribunalCaseSummaryResponse(
 ) {
     public static TribunalCaseSummaryResponse from(
             TribunalCase tribunalCase,
+            TribunalAuthorResponse author,
             TribunalVoteSummaryResponse voteSummary,
             long viewCount,
             long commentCount
@@ -36,11 +39,12 @@ public record TribunalCaseSummaryResponse(
                 tribunalCase.getReplayLang(),
                 tribunalCase.getPlayerNickname(),
                 tribunalCase.getPlayerPick(),
+                MafiaJobNameResolver.resolve(tribunalCase.getPlayerPick()),
                 tribunalCase.getDescription(),
                 tribunalCase.getWinnerTeam(),
                 tribunalCase.getGameType(),
                 tribunalCase.getGameDuration(),
-                TribunalAuthorResponse.from(tribunalCase.getAuthor()),
+                author,
                 voteSummary,
                 viewCount,
                 commentCount,

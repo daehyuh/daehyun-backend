@@ -2,7 +2,10 @@ package com.example.daehyunbackend.service;
 
 import com.example.daehyunbackend.dto.TribunalCaseCreateRequest;
 import com.example.daehyunbackend.dto.TribunalCommentRequest;
+import com.example.daehyunbackend.dto.TribunalReplayPreviewRequest;
 import com.example.daehyunbackend.dto.TribunalVoteRequest;
+import com.example.daehyunbackend.entity.Account;
+import com.example.daehyunbackend.entity.Record;
 import com.example.daehyunbackend.entity.Role;
 import com.example.daehyunbackend.entity.TribunalCase;
 import com.example.daehyunbackend.entity.TribunalCaseCafeLink;
@@ -13,6 +16,8 @@ import com.example.daehyunbackend.entity.TribunalCommentLike;
 import com.example.daehyunbackend.entity.TribunalReplayMessage;
 import com.example.daehyunbackend.entity.TribunalVerdict;
 import com.example.daehyunbackend.entity.User;
+import com.example.daehyunbackend.repository.AccountRepository;
+import com.example.daehyunbackend.repository.RecordRepository;
 import com.example.daehyunbackend.repository.TribunalCaseCafeLinkRepository;
 import com.example.daehyunbackend.repository.TribunalCaseCommentRepository;
 import com.example.daehyunbackend.repository.TribunalCaseRepository;
@@ -21,12 +26,16 @@ import com.example.daehyunbackend.repository.TribunalCaseViewRepository;
 import com.example.daehyunbackend.repository.TribunalCommentLikeRepository;
 import com.example.daehyunbackend.repository.TribunalReplayMessageRepository;
 import com.example.daehyunbackend.response.TribunalCafeLinkResponse;
+import com.example.daehyunbackend.response.TribunalAuthorResponse;
 import com.example.daehyunbackend.response.TribunalCaseDetailResponse;
 import com.example.daehyunbackend.response.TribunalCaseSummaryResponse;
 import com.example.daehyunbackend.response.TribunalCommentResponse;
 import com.example.daehyunbackend.response.TribunalPageResponse;
+import com.example.daehyunbackend.response.TribunalReplayPlayerResponse;
 import com.example.daehyunbackend.response.TribunalReplayMessageResponse;
+import com.example.daehyunbackend.response.TribunalReplayPreviewResponse;
 import com.example.daehyunbackend.response.TribunalVoteSummaryResponse;
+import com.example.daehyunbackend.support.MafiaJobNameResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -35,14 +44,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class TribunalService {
     private final TribunalReplayScraper replayScraper;
+    private final AccountRepository accountRepository;
+    private final RecordRepository recordRepository;
     private final TribunalCaseRepository tribunalCaseRepository;
     private final TribunalCaseCafeLinkRepository cafeLinkRepository;
     private final TribunalReplayMessageRepository replayMessageRepository;
@@ -56,14 +71,18 @@ public class TribunalService {
         validateCreateRequest(request);
 
         TribunalReplayScraper.ReplayParseResult replay = replayScraper.scrape(request.replayUrl());
+        String playerNickname = normalizeRequired(request.nickname(), "닉네임을 입력해주세요.");
+        String playerPick = normalizeRequired(request.pick(), "픽을 입력해주세요.");
+        validateSelectedPlayer(replay, playerNickname, playerPick);
+
         LocalDateTime now = LocalDateTime.now();
         TribunalCase tribunalCase = tribunalCaseRepository.save(TribunalCase.create(
                 author,
                 request.replayUrl().trim(),
                 replay.roomId(),
                 replay.lang(),
-                request.nickname().trim(),
-                request.pick().trim(),
+                playerNickname,
+                playerPick,
                 normalizeOptional(request.description()),
                 replay.winnerTeam(),
                 replay.gameType(),
@@ -75,6 +94,22 @@ public class TribunalService {
         saveReplayMessages(tribunalCase, replay.messages());
 
         return getCase(tribunalCase.getId(), author);
+    }
+
+    public TribunalReplayPreviewResponse previewReplay(TribunalReplayPreviewRequest request) {
+        String replayUrl = normalizeRequired(request == null ? null : request.replayUrl(), "리플레이 링크를 입력해주세요.");
+        TribunalReplayScraper.ReplayParseResult replay = replayScraper.scrape(replayUrl);
+
+        return new TribunalReplayPreviewResponse(
+                replayUrl,
+                replay.roomId(),
+                replay.lang(),
+                replay.winnerTeam(),
+                replay.gameType(),
+                replay.gameDuration(),
+                replay.fetchedAt(),
+                replayPlayers(replay)
+        );
     }
 
     @Transactional(readOnly = true)
@@ -89,6 +124,7 @@ public class TribunalService {
         List<TribunalCaseSummaryResponse> content = casePage.getContent().stream()
                 .map(tribunalCase -> TribunalCaseSummaryResponse.from(
                         tribunalCase,
+                        authorResponse(tribunalCase.getAuthor(), viewer, false),
                         voteSummary(tribunalCase, viewer),
                         viewRepository.countByTribunalCase(tribunalCase),
                         commentRepository.countByTribunalCaseAndDeletedFalse(tribunalCase)
@@ -110,6 +146,7 @@ public class TribunalService {
         recordView(tribunalCase, viewer);
         return TribunalCaseDetailResponse.from(
                 tribunalCase,
+                authorResponse(tribunalCase.getAuthor(), viewer, false),
                 cafeLinkRepository.findByTribunalCaseOrderByIdAsc(tribunalCase).stream()
                         .map(TribunalCafeLinkResponse::from)
                         .toList(),
@@ -163,6 +200,7 @@ public class TribunalService {
                 author,
                 parent,
                 content,
+                Boolean.TRUE.equals(request == null ? null : request.anonymous()),
                 LocalDateTime.now()
         ));
         return commentResponse(comment, author);
@@ -177,6 +215,9 @@ public class TribunalService {
         }
 
         comment.setContent(normalizeRequired(request == null ? null : request.content(), "댓글 내용을 입력해주세요."));
+        if (request != null && request.anonymous() != null) {
+            comment.setAnonymous(request.anonymous());
+        }
         comment.setUpdatedAt(LocalDateTime.now());
         return commentResponse(comment, user);
     }
@@ -212,6 +253,42 @@ public class TribunalService {
         normalizeRequired(request.replayUrl(), "리플레이 링크를 입력해주세요.");
         normalizeRequired(request.nickname(), "닉네임을 입력해주세요.");
         normalizeRequired(request.pick(), "픽을 입력해주세요.");
+    }
+
+    private void validateSelectedPlayer(
+            TribunalReplayScraper.ReplayParseResult replay,
+            String playerNickname,
+            String playerPick
+    ) {
+        boolean exists = replayPlayers(replay).stream()
+                .anyMatch(player -> player.nickname().equals(playerNickname) && player.pick().equals(playerPick));
+        if (!exists) {
+            throw new IllegalArgumentException("리플레이에 존재하는 플레이어와 픽만 사건으로 등록할 수 있습니다.");
+        }
+    }
+
+    private List<TribunalReplayPlayerResponse> replayPlayers(TribunalReplayScraper.ReplayParseResult replay) {
+        Map<String, TribunalReplayPlayerResponse> players = new LinkedHashMap<>();
+
+        for (TribunalReplayScraper.ReplayMessageData message : replay.messages()) {
+            String nickname = normalizeOptional(message.nickname());
+            String pick = normalizeOptional(message.jobCode());
+            if (nickname == null || pick == null) {
+                continue;
+            }
+
+            String key = nickname + "\n" + pick;
+            players.computeIfAbsent(key, ignored -> new TribunalReplayPlayerResponse(
+                    players.size() + 1,
+                    nickname,
+                    pick,
+                    MafiaJobNameResolver.resolve(pick),
+                    normalizeOptional(message.jobImageUrl()),
+                    normalizeOptional(message.frameImageUrl())
+            ));
+        }
+
+        return List.copyOf(players.values());
     }
 
     private void saveCafeLinks(TribunalCase tribunalCase, List<String> cafeLinks) {
@@ -281,9 +358,36 @@ public class TribunalService {
         boolean likedByMe = viewer != null && commentLikeRepository.findByCommentAndUser(comment, viewer).isPresent();
         return TribunalCommentResponse.from(
                 comment,
+                authorResponse(comment.getAuthor(), viewer, Boolean.TRUE.equals(comment.getAnonymous())),
                 commentLikeRepository.countByComment(comment),
                 likedByMe
         );
+    }
+
+    private TribunalAuthorResponse authorResponse(User author, User viewer, boolean anonymous) {
+        boolean mine = author != null && viewer != null && author.getId().equals(viewer.getId());
+        if (anonymous) {
+            return TribunalAuthorResponse.anonymous(mine);
+        }
+        return TribunalAuthorResponse.visible(resolveNickname(author), mine);
+    }
+
+    private String resolveNickname(User user) {
+        if (user == null) {
+            return "NICKNAME_UNLINKED";
+        }
+
+        List<Account> accounts = accountRepository.findAllByUser(user);
+        return accounts.stream()
+                .map(recordRepository::findTopByAccountOrderByDateDesc)
+                .flatMap(Optional::stream)
+                .filter(record -> record.getNICKNAME() != null && !record.getNICKNAME().isBlank())
+                .max(Comparator.comparing(
+                        Record::getDate,
+                        Comparator.nullsFirst(Comparator.naturalOrder())
+                ))
+                .map(Record::getNICKNAME)
+                .orElse("NICKNAME_UNLINKED");
     }
 
     private TribunalCase findCase(Long caseId) {

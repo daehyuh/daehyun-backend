@@ -2,6 +2,7 @@ package com.example.daehyunbackend.controller;
 
 import com.example.daehyunbackend.dto.TribunalCaseCreateRequest;
 import com.example.daehyunbackend.dto.TribunalCommentRequest;
+import com.example.daehyunbackend.dto.TribunalReplayPreviewRequest;
 import com.example.daehyunbackend.dto.TribunalVoteRequest;
 import com.example.daehyunbackend.entity.User;
 import com.example.daehyunbackend.response.ApiResponse;
@@ -9,6 +10,7 @@ import com.example.daehyunbackend.response.TribunalCaseDetailResponse;
 import com.example.daehyunbackend.response.TribunalCaseSummaryResponse;
 import com.example.daehyunbackend.response.TribunalCommentResponse;
 import com.example.daehyunbackend.response.TribunalPageResponse;
+import com.example.daehyunbackend.response.TribunalReplayPreviewResponse;
 import com.example.daehyunbackend.response.TribunalVoteSummaryResponse;
 import com.example.daehyunbackend.service.TribunalService;
 import com.example.daehyunbackend.service.UserService;
@@ -46,6 +48,19 @@ public class TribunalController {
                         tribunalService.createCase(request, currentUser(authentication)),
                         "사건 등록 성공"
                 ));
+    }
+
+    @PostMapping("/replay/preview")
+    public ResponseEntity<ApiResponse<TribunalReplayPreviewResponse>> previewReplay(
+            Authentication authentication,
+            @RequestBody TribunalReplayPreviewRequest request
+    ) {
+        currentUser(authentication);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                tribunalService.previewReplay(request),
+                "리플레이 확인 성공"
+        ));
     }
 
     @GetMapping
