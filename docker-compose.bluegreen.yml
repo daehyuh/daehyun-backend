@@ -1,0 +1,59 @@
+name: daehyun-backend
+
+x-app-common: &app-common
+  image: daehyun-backend:${APP_IMAGE_TAG:-latest}
+  build:
+    context: .
+  restart: unless-stopped
+  depends_on:
+    - db
+  environment:
+    SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mariadb://db:3306/daehyun}
+    SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-root}
+    SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?Set SPRING_DATASOURCE_PASSWORD}
+    IMAGE_UPLOAD_DIR: ${IMAGE_UPLOAD_DIR:-/upload/images}
+    TZ: ${TZ:-Asia/Seoul}
+  volumes:
+    - ./image:/upload/images
+  expose:
+    - "8080"
+  networks:
+    - backend
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${PUBLIC_PORT:-8080}:80"
+    volumes:
+      - ./deploy/runtime/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - backend
+
+  app-blue:
+    <<: *app-common
+    container_name: daehyun-backend-app-blue
+
+  app-green:
+    <<: *app-common
+    container_name: daehyun-backend-app-green
+
+  db:
+    image: mariadb:10.6
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-daehyun}
+    ports:
+      - "${DB_BIND_ADDRESS:-127.0.0.1}:3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - backend
+
+networks:
+  backend:
+
+volumes:
+  mariadb_data:
