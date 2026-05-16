@@ -268,6 +268,19 @@ public class TribunalService {
     }
 
     private List<TribunalReplayPlayerResponse> replayPlayers(TribunalReplayScraper.ReplayParseResult replay) {
+        if (replay.players() != null && !replay.players().isEmpty()) {
+            return replay.players().stream()
+                    .map(player -> new TribunalReplayPlayerResponse(
+                            player.order(),
+                            player.nickname(),
+                            player.jobCode(),
+                            MafiaJobNameResolver.resolve(player.jobCode()),
+                            normalizeOptional(player.jobImageUrl()),
+                            normalizeOptional(player.frameImageUrl())
+                    ))
+                    .toList();
+        }
+
         Map<String, TribunalReplayPlayerResponse> players = new LinkedHashMap<>();
 
         for (TribunalReplayScraper.ReplayMessageData message : replay.messages()) {
