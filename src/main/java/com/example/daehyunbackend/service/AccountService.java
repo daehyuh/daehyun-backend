@@ -1,12 +1,11 @@
 package com.example.daehyunbackend.service;
 
-import com.example.daehyunbackend.dto.UserDto;
 import com.example.daehyunbackend.entity.Account;
 import com.example.daehyunbackend.entity.User;
 import com.example.daehyunbackend.repository.AccountRepository;
-import com.example.daehyunbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,6 +27,30 @@ public class AccountService {
 
     public Long save(Account account) {
         return accountRepository.save(account).getId();
+    }
+
+    @Transactional
+    public Account linkAccount(Long accountId, User user, String secretKey) {
+        Account existingAccount = accountRepository.findByAccountId(accountId);
+
+        if (existingAccount != null) {
+            User linkedUser = existingAccount.getUser();
+            if (linkedUser != null && !linkedUser.getId().equals(user.getId())) {
+                throw new IllegalArgumentException("이미 다른 유저에게 연동된 계정입니다.");
+            }
+
+            existingAccount.linkTo(user, secretKey);
+            return accountRepository.save(existingAccount);
+        }
+
+        Account account = Account.builder()
+                .accountId(accountId)
+                .user(user)
+                .createdAt(LocalDateTime.now())
+                .secretKey(secretKey)
+                .build();
+
+        return accountRepository.save(account);
     }
 
     public boolean existsByUser(User user) {
