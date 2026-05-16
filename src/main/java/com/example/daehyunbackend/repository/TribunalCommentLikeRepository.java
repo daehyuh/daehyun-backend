@@ -6,6 +6,7 @@ import com.example.daehyunbackend.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -13,4 +14,6 @@ public interface TribunalCommentLikeRepository extends JpaRepository<TribunalCom
     Optional<TribunalCommentLike> findByCommentAndUser(TribunalCaseComment comment, User user);
 
     long countByComment(TribunalCaseComment comment);
+
+    void deleteByCommentIn(List<TribunalCaseComment> comments);
 }

@@ -11,4 +11,6 @@ public interface TribunalCaseAnonymousAuthorRepository extends JpaRepository<Tri
     Optional<TribunalCaseAnonymousAuthor> findByTribunalCaseAndUser(TribunalCase tribunalCase, User user);
 
     int countByTribunalCase(TribunalCase tribunalCase);
+
+    void deleteByTribunalCase(TribunalCase tribunalCase);
 }

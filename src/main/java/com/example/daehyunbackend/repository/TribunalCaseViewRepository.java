@@ -13,4 +13,6 @@ public interface TribunalCaseViewRepository extends JpaRepository<TribunalCaseVi
     Optional<TribunalCaseView> findByTribunalCaseAndUser(TribunalCase tribunalCase, User user);
 
     long countByTribunalCase(TribunalCase tribunalCase);
+
+    void deleteByTribunalCase(TribunalCase tribunalCase);
 }
