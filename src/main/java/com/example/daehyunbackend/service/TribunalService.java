@@ -45,6 +45,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -264,6 +265,41 @@ public class TribunalService {
         normalizeRequired(request.replayUrl(), "리플레이 링크를 입력해주세요.");
         normalizeRequired(request.nickname(), "닉네임을 입력해주세요.");
         normalizeRequired(request.pick(), "픽을 입력해주세요.");
+        validateCafeLinks(request.cafeLinks());
+    }
+
+    private void validateCafeLinks(List<String> cafeLinks) {
+        if (cafeLinks == null || cafeLinks.isEmpty()) {
+            return;
+        }
+
+        for (String link : cafeLinks) {
+            String normalized = normalizeOptional(link);
+            if (normalized == null) {
+                continue;
+            }
+            if (!isNaverCafeLink(normalized)) {
+                throw new IllegalArgumentException("네이버카페 링크만 등록할 수 있습니다.");
+            }
+        }
+    }
+
+    private boolean isNaverCafeLink(String link) {
+        try {
+            URI uri = URI.create(link);
+            String scheme = uri.getScheme();
+            String host = uri.getHost();
+            if (scheme == null || host == null) {
+                return false;
+            }
+            if (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https")) {
+                return false;
+            }
+            return host.equalsIgnoreCase("cafe.naver.com")
+                    || host.toLowerCase().endsWith(".cafe.naver.com");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private void requireAccountVerified(User user) {
