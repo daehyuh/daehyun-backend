@@ -20,13 +20,40 @@ if [[ "${APPLY_HOST_NGINX}" != "true" ]]; then
   exit 0
 fi
 
+run_privileged() {
+  if [[ "$(id -u)" -eq 0 ]]; then
+    "$@"
+  else
+    sudo "$@"
+  fi
+}
+
+run_privileged_shell() {
+  if [[ "$(id -u)" -eq 0 ]]; then
+    bash -c "$1"
+  else
+    sudo bash -c "$1"
+  fi
+}
+
+detect_existing_conf_path() {
+  run_privileged_shell \
+    "grep -R -l -F 'server_name ${HOST_NGINX_SERVER_NAME};' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | grep -v '\\.bak$' | head -n 1" \
+    || true
+}
+
 TEMPLATE_FILE="${HOST_NGINX_TEMPLATE:-${PROJECT_ROOT}/deploy/nginx/host-api.conf.template}"
 PUBLIC_PORT="${PUBLIC_PORT:-18080}"
 HOST_NGINX_SERVER_NAME="${HOST_NGINX_SERVER_NAME:-api.xn--vk1b177d.com}"
 HOST_NGINX_UPSTREAM="${HOST_NGINX_UPSTREAM:-http://127.0.0.1:${PUBLIC_PORT}}"
 HOST_NGINX_SSL_CERT="${HOST_NGINX_SSL_CERT:-/etc/letsencrypt/live/${HOST_NGINX_SERVER_NAME}/fullchain.pem}"
 HOST_NGINX_SSL_KEY="${HOST_NGINX_SSL_KEY:-/etc/letsencrypt/live/${HOST_NGINX_SERVER_NAME}/privkey.pem}"
+HOST_NGINX_CONF_PATH="${HOST_NGINX_CONF_PATH:-}"
+if [[ -z "${HOST_NGINX_CONF_PATH}" ]]; then
+  HOST_NGINX_CONF_PATH="$(detect_existing_conf_path)"
+fi
 HOST_NGINX_CONF_PATH="${HOST_NGINX_CONF_PATH:-/etc/nginx/conf.d/${HOST_NGINX_SERVER_NAME}.conf}"
+HOST_NGINX_BACKUP_DIR="${HOST_NGINX_BACKUP_DIR:-/etc/nginx/codex-backups}"
 HOST_NGINX_TEST_CMD="${HOST_NGINX_TEST_CMD:-nginx -t}"
 HOST_NGINX_RELOAD_CMD="${HOST_NGINX_RELOAD_CMD:-systemctl reload nginx}"
 
@@ -52,22 +79,6 @@ render_template() {
     "${TEMPLATE_FILE}"
 }
 
-run_privileged() {
-  if [[ "$(id -u)" -eq 0 ]]; then
-    "$@"
-  else
-    sudo "$@"
-  fi
-}
-
-run_privileged_shell() {
-  if [[ "$(id -u)" -eq 0 ]]; then
-    bash -c "$1"
-  else
-    sudo bash -c "$1"
-  fi
-}
-
 require_file "${TEMPLATE_FILE}" "Host Nginx template"
 require_file "${HOST_NGINX_SSL_CERT}" "SSL certificate"
 require_file "${HOST_NGINX_SSL_KEY}" "SSL certificate key"
@@ -77,7 +88,8 @@ backup_file=""
 render_template > "${tmp_file}"
 
 if run_privileged test -f "${HOST_NGINX_CONF_PATH}"; then
-  backup_file="${HOST_NGINX_CONF_PATH}.$(date +%Y%m%d%H%M%S).bak"
+  run_privileged mkdir -p "${HOST_NGINX_BACKUP_DIR}"
+  backup_file="${HOST_NGINX_BACKUP_DIR}/$(basename "${HOST_NGINX_CONF_PATH}").$(date +%Y%m%d%H%M%S).bak"
   run_privileged cp "${HOST_NGINX_CONF_PATH}" "${backup_file}"
 fi
 

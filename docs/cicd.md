@@ -84,7 +84,8 @@ HOST_NGINX_SERVER_NAME=api.xn--vk1b177d.com
 HOST_NGINX_UPSTREAM=http://127.0.0.1:18080
 HOST_NGINX_SSL_CERT=/etc/letsencrypt/live/api.xn--vk1b177d.com/fullchain.pem
 HOST_NGINX_SSL_KEY=/etc/letsencrypt/live/api.xn--vk1b177d.com/privkey.pem
-HOST_NGINX_CONF_PATH=/etc/nginx/conf.d/api.xn--vk1b177d.com.conf
+HOST_NGINX_CONF_PATH=/etc/nginx/sites-enabled/default
+HOST_NGINX_BACKUP_DIR=/etc/nginx/codex-backups
 
 ENABLE_MONITORING=true
 GRAFANA_ADMIN_PASSWORD=<strong-password>
@@ -114,7 +115,8 @@ Host Nginx deployment is controlled by `.env`.
 APPLY_HOST_NGINX=true
 HOST_NGINX_SERVER_NAME=api.xn--vk1b177d.com
 HOST_NGINX_UPSTREAM=http://127.0.0.1:18080
-HOST_NGINX_CONF_PATH=/etc/nginx/conf.d/api.xn--vk1b177d.com.conf
+HOST_NGINX_CONF_PATH=/etc/nginx/sites-enabled/default
+HOST_NGINX_BACKUP_DIR=/etc/nginx/codex-backups
 ```
 
 The script validates the config with `nginx -t` before reloading. SSL certificates are not reissued during CI/CD.

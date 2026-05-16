@@ -44,6 +44,7 @@ out/
 deploy/.env
 deploy/.env.*
 deploy/runtime/
+.codex-tmp/
 
 ### local Spring overrides ###
 src/main/resources/application-*.local.properties
