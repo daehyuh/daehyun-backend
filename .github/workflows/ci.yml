@@ -118,8 +118,40 @@ jobs:
           text = env_path.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
           env_path.write_text(text, encoding="utf-8")
 
-          def parse_dotenv(source: str) -> dict[str, str]:
-              parsed: dict[str, str] = {}
+          PROPERTY_TO_ENV = {
+              "spring.application.name": "SPRING_APPLICATION_NAME",
+              "spring.main.allow-bean-definition-overriding": "SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING",
+              "server.error.include-message": "SERVER_ERROR_INCLUDE_MESSAGE",
+              "server.error.include-binding-errors": "SERVER_ERROR_INCLUDE_BINDING_ERRORS",
+              "server.error.include-stacktrace": "SERVER_ERROR_INCLUDE_STACKTRACE",
+              "server.error.include-exception": "SERVER_ERROR_INCLUDE_EXCEPTION",
+              "spring.profiles.include": "SPRING_PROFILES_INCLUDE",
+              "spring.jpa.show-sql": "SPRING_JPA_SHOW_SQL",
+              "spring.jpa.hibernate.ddl-auto": "SPRING_JPA_HIBERNATE_DDL_AUTO",
+              "spring.jpa.database-platform": "SPRING_JPA_DATABASE_PLATFORM",
+              "spring.datasource.driverClassName": "SPRING_DATASOURCE_DRIVER_CLASS_NAME",
+              "spring.datasource.driver-class-name": "SPRING_DATASOURCE_DRIVER_CLASS_NAME",
+              "spring.datasource.url": "SPRING_DATASOURCE_URL",
+              "spring.datasource.username": "SPRING_DATASOURCE_USERNAME",
+              "spring.datasource.password": "SPRING_DATASOURCE_PASSWORD",
+              "jwt.secret": "JWT_SECRET",
+              "jwt.access-token-expiration": "JWT_ACCESS_TOKEN_EXPIRATION",
+              "jwt.refresh-token-expiration": "JWT_REFRESH_TOKEN_EXPIRATION",
+              "spring.security.oauth2.client.registration.google.client-id": "GOOGLE_OAUTH_CLIENT_ID",
+              "spring.security.oauth2.client.registration.google.client-secret": "GOOGLE_OAUTH_CLIENT_SECRET",
+              "spring.security.oauth2.client.registration.google.redirect-uri": "GOOGLE_OAUTH_REDIRECT_URI",
+              "spring.security.oauth2.client.registration.google.scope": "GOOGLE_OAUTH_SCOPE",
+              "admin.password": "ADMIN_PASSWORD",
+              "spring.security.user.name": "ADMIN_BASIC_USERNAME",
+              "spring.security.user.password": "ADMIN_BASIC_PASSWORD",
+              "frontend.url": "FRONTEND_URL",
+              "frontend.domain": "FRONTEND_DOMAIN",
+              "image.upload.dir": "IMAGE_UPLOAD_DIR",
+              "management.endpoints.web.exposure.include": "MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE",
+          }
+
+          def parse_dotenv(source: str) -> list[tuple[str, str]]:
+              parsed: list[tuple[str, str]] = []
               lines = source.splitlines()
               index = 0
               while index < len(lines):
@@ -134,7 +166,7 @@ jobs:
                   key, value = line.split("=", 1)
                   key = key.strip()
                   value = value.strip()
-                  if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
+                  if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.-]*", key):
                       raise SystemExit(f"Invalid DEPLOY_ENV_FILE key on line {line_number}: {key}")
                   if value.startswith("'") or value.startswith('"'):
                       quote = value[0]
@@ -146,8 +178,20 @@ jobs:
                           index += 1
                       chunks[-1] = chunks[-1][:-1]
                       value = "\n".join(chunks)
-                  parsed[key] = value
+                  parsed.append((key, value))
               return parsed
+
+          def normalize_values(entries: list[tuple[str, str]]) -> dict[str, str]:
+              normalized: dict[str, str] = {}
+              for key, value in entries:
+                  target = PROPERTY_TO_ENV.get(key, key)
+                  if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", target):
+                      raise SystemExit(
+                          f"Unsupported DEPLOY_ENV_FILE key: {key}. Use an env-style key or add it to the workflow mapping."
+                      )
+                  if target not in normalized or key == target:
+                      normalized[target] = value
+              return normalized
 
           def required(values: dict[str, str], key: str) -> None:
               if not values.get(key):
@@ -167,7 +211,7 @@ jobs:
                   raise SystemExit(f"{key} cannot contain newlines in server .env")
               return f"{key}={shlex.quote(value)}\n"
 
-          values = parse_dotenv(text)
+          values = normalize_values(parse_dotenv(text))
           for key in [
               "PROD_SSH_HOST",
               "PROD_SSH_USER",
