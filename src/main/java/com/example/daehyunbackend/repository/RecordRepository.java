@@ -2,6 +2,8 @@ package com.example.daehyunbackend.repository;
 
 import com.example.daehyunbackend.entity.Account;
 import com.example.daehyunbackend.entity.Record;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -18,4 +20,6 @@ public interface RecordRepository extends JpaRepository<Record, Long> {
     Record findByNICKNAMEAndDate(String nickname, LocalDate date);
     Optional<Record> findByAccountAndDate(Account account, LocalDate date);
     Optional<Record> findTopByAccountOrderByDateDesc(Account account);
+    @EntityGraph(attributePaths = "account")
+    List<Record> findByRecordidGreaterThanOrderByRecordidAsc(Long recordid, Pageable pageable);
 }

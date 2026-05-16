@@ -5,6 +5,7 @@ import com.example.daehyunbackend.entity.Record;
 import com.example.daehyunbackend.repository.RecordRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -15,13 +16,16 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class RecordService {
     private final RecordRepository recordRepository;
+    private final AccountRecordProjectionService projectionService;
 
     public List<Record> findAll() {
         return recordRepository.findAll();
     }
 
+    @Transactional
     public void saveAll(List<Record> records) {
-        recordRepository.saveAll(records);
+        List<Record> savedRecords = recordRepository.saveAll(records);
+        savedRecords.forEach(record -> projectionService.projectLegacyRecord(record, true));
     }
     public List<Record> findAllByDate(LocalDate date) {
         return recordRepository.findAllByDate(date);
@@ -39,8 +43,11 @@ public class RecordService {
         return recordRepository.findTopByAccountOrderByDateDesc(account);
     }
 
+    @Transactional
     public Record save(Record record) {
-        return recordRepository.save(record);
+        Record savedRecord = recordRepository.save(record);
+        projectionService.projectLegacyRecord(savedRecord, true);
+        return savedRecord;
     }
 
     public boolean existsByAccount(Account account) {
