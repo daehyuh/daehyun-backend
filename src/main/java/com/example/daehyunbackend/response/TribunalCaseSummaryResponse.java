@@ -17,6 +17,7 @@ public record TribunalCaseSummaryResponse(
         String gameDuration,
         TribunalAuthorResponse author,
         TribunalVoteSummaryResponse voteSummary,
+        long viewCount,
         long commentCount,
         LocalDateTime replayFetchedAt,
         LocalDateTime createdAt,
@@ -25,6 +26,7 @@ public record TribunalCaseSummaryResponse(
     public static TribunalCaseSummaryResponse from(
             TribunalCase tribunalCase,
             TribunalVoteSummaryResponse voteSummary,
+            long viewCount,
             long commentCount
     ) {
         return new TribunalCaseSummaryResponse(
@@ -40,6 +42,7 @@ public record TribunalCaseSummaryResponse(
                 tribunalCase.getGameDuration(),
                 TribunalAuthorResponse.from(tribunalCase.getAuthor()),
                 voteSummary,
+                viewCount,
                 commentCount,
                 tribunalCase.getReplayFetchedAt(),
                 tribunalCase.getCreatedAt(),

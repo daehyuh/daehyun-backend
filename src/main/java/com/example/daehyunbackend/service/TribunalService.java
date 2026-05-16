@@ -8,6 +8,7 @@ import com.example.daehyunbackend.entity.TribunalCase;
 import com.example.daehyunbackend.entity.TribunalCaseCafeLink;
 import com.example.daehyunbackend.entity.TribunalCaseComment;
 import com.example.daehyunbackend.entity.TribunalCaseVote;
+import com.example.daehyunbackend.entity.TribunalCaseView;
 import com.example.daehyunbackend.entity.TribunalCommentLike;
 import com.example.daehyunbackend.entity.TribunalReplayMessage;
 import com.example.daehyunbackend.entity.TribunalVerdict;
@@ -16,6 +17,7 @@ import com.example.daehyunbackend.repository.TribunalCaseCafeLinkRepository;
 import com.example.daehyunbackend.repository.TribunalCaseCommentRepository;
 import com.example.daehyunbackend.repository.TribunalCaseRepository;
 import com.example.daehyunbackend.repository.TribunalCaseVoteRepository;
+import com.example.daehyunbackend.repository.TribunalCaseViewRepository;
 import com.example.daehyunbackend.repository.TribunalCommentLikeRepository;
 import com.example.daehyunbackend.repository.TribunalReplayMessageRepository;
 import com.example.daehyunbackend.response.TribunalCafeLinkResponse;
@@ -45,6 +47,7 @@ public class TribunalService {
     private final TribunalCaseCafeLinkRepository cafeLinkRepository;
     private final TribunalReplayMessageRepository replayMessageRepository;
     private final TribunalCaseVoteRepository voteRepository;
+    private final TribunalCaseViewRepository viewRepository;
     private final TribunalCaseCommentRepository commentRepository;
     private final TribunalCommentLikeRepository commentLikeRepository;
 
@@ -87,6 +90,7 @@ public class TribunalService {
                 .map(tribunalCase -> TribunalCaseSummaryResponse.from(
                         tribunalCase,
                         voteSummary(tribunalCase, viewer),
+                        viewRepository.countByTribunalCase(tribunalCase),
                         commentRepository.countByTribunalCaseAndDeletedFalse(tribunalCase)
                 ))
                 .toList();
@@ -100,9 +104,10 @@ public class TribunalService {
         );
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public TribunalCaseDetailResponse getCase(Long caseId, User viewer) {
         TribunalCase tribunalCase = findCase(caseId);
+        recordView(tribunalCase, viewer);
         return TribunalCaseDetailResponse.from(
                 tribunalCase,
                 cafeLinkRepository.findByTribunalCaseOrderByIdAsc(tribunalCase).stream()
@@ -112,6 +117,7 @@ public class TribunalService {
                         .map(TribunalReplayMessageResponse::from)
                         .toList(),
                 voteSummary(tribunalCase, viewer),
+                viewRepository.countByTribunalCase(tribunalCase),
                 commentRepository.findByTribunalCaseOrderByCreatedAtAsc(tribunalCase).stream()
                         .map(comment -> commentResponse(comment, viewer))
                         .toList()
@@ -256,6 +262,19 @@ public class TribunalService {
                 voteRepository.countByTribunalCaseAndVerdict(tribunalCase, TribunalVerdict.NOT_GUILTY),
                 myVerdict
         );
+    }
+
+    private void recordView(TribunalCase tribunalCase, User viewer) {
+        if (viewer == null) {
+            return;
+        }
+
+        viewRepository.findByTribunalCaseAndUser(tribunalCase, viewer)
+                .orElseGet(() -> viewRepository.save(TribunalCaseView.create(
+                        tribunalCase,
+                        viewer,
+                        LocalDateTime.now()
+                )));
     }
 
     private TribunalCommentResponse commentResponse(TribunalCaseComment comment, User viewer) {
