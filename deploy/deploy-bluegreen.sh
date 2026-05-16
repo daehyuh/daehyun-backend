@@ -39,7 +39,17 @@ export PUBLIC_PORT
 export APP_IMAGE
 export APP_IMAGE_TAG
 
-COMPOSE=(docker compose -p "${PROJECT_NAME}" -f "${COMPOSE_FILE}")
+DOCKER=()
+if docker ps >/dev/null 2>&1; then
+  DOCKER=(docker)
+elif command -v sudo >/dev/null 2>&1 && sudo -n docker ps >/dev/null 2>&1; then
+  DOCKER=(sudo -n docker)
+else
+  echo "Cannot access Docker. Add this user to the docker group or allow passwordless sudo for docker." >&2
+  exit 1
+fi
+
+COMPOSE=("${DOCKER[@]}" compose -p "${PROJECT_NAME}" -f "${COMPOSE_FILE}")
 COMPOSE_NETWORK="${PROJECT_NAME}_backend"
 
 mkdir -p "${NGINX_RUNTIME_DIR}"
@@ -51,7 +61,7 @@ service_is_running() {
   local service="$1"
   local container_id
   container_id="$("${COMPOSE[@]}" ps -q "${service}" 2>/dev/null || true)"
-  [[ -n "${container_id}" ]] && [[ "$(docker inspect -f '{{.State.Running}}' "${container_id}" 2>/dev/null || true)" == "true" ]]
+  [[ -n "${container_id}" ]] && [[ "$("${DOCKER[@]}" inspect -f '{{.State.Running}}' "${container_id}" 2>/dev/null || true)" == "true" ]]
 }
 
 configured_active_service() {
@@ -86,7 +96,7 @@ wait_for_health() {
   local url="http://${service}:8080${HEALTH_PATH}"
 
   for ((attempt = 1; attempt <= HEALTH_RETRIES; attempt++)); do
-    if docker run --rm --network "${COMPOSE_NETWORK}" curlimages/curl:8.10.1 -fsS "${url}" >/dev/null; then
+    if "${DOCKER[@]}" run --rm --network "${COMPOSE_NETWORK}" curlimages/curl:8.10.1 -fsS "${url}" >/dev/null; then
       echo "Health check passed for ${service}"
       return 0
     fi
@@ -124,7 +134,7 @@ login_to_registry_if_configured() {
 
   if [[ -n "${username}" && -n "${token}" ]]; then
     echo "Logging in to ${registry} as ${username}"
-    printf '%s' "${token}" | docker login "${registry}" -u "${username}" --password-stdin >/dev/null
+    printf '%s' "${token}" | "${DOCKER[@]}" login "${registry}" -u "${username}" --password-stdin >/dev/null
   else
     echo "Skipping registry login. Set GHCR_USERNAME and GHCR_TOKEN when pulling private images."
   fi

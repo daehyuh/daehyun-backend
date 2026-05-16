@@ -46,8 +46,18 @@ required_env "SPRING_DATASOURCE_PASSWORD"
 required_env "MARIADB_ROOT_PASSWORD"
 required_env "GRAFANA_ADMIN_PASSWORD"
 
+DOCKER=()
+if docker ps >/dev/null 2>&1; then
+  DOCKER=(docker)
+elif command -v sudo >/dev/null 2>&1 && sudo -n docker ps >/dev/null 2>&1; then
+  DOCKER=(sudo -n docker)
+else
+  echo "Cannot access Docker. Add this user to the docker group or allow passwordless sudo for docker." >&2
+  exit 1
+fi
+
 COMPOSE=(
-  docker compose
+  "${DOCKER[@]}" compose
   -p "${PROJECT_NAME}"
   -f "${APP_COMPOSE_FILE}"
   -f "${MONITORING_COMPOSE_FILE}"

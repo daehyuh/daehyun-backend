@@ -56,6 +56,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -65,6 +68,7 @@ jobs:
         with:
           context: .
           push: false
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.image_tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -75,6 +79,7 @@ jobs:
         with:
           context: .
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: |
             ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.image_tag }}
             ${{ steps.meta.outputs.image }}:latest
@@ -120,8 +125,14 @@ jobs:
             test -n "$GRAFANA_ADMIN_PASSWORD"
           fi
 
-          printf '%s\n' "$PROD_SSH_PRIVATE_KEY" > .deploy-env/prod_key
+          printf '%s\n' "$PROD_SSH_PRIVATE_KEY" \
+            | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e '/^$/d' \
+            > .deploy-env/prod_key
           chmod 600 .deploy-env/prod_key
+          if ! ssh-keygen -y -f .deploy-env/prod_key >/dev/null 2>&1; then
+            echo "PROD_SSH_PRIVATE_KEY is not a valid private key. Paste the private key file contents, not the ssh-rsa/ssh-ed25519 public key." >&2
+            exit 1
+          fi
 
           awk '
             /^PROD_SSH_PRIVATE_KEY=/ {
@@ -136,7 +147,7 @@ jobs:
               }
               next
             }
-            /^(PROD_SSH_|PROD_APP_DIR=|DEPLOY_ENV_FILE=)/ { next }
+            /^(PROD_SSH_|PROD_APP_DIR=|DEPLOY_ENV_FILE=|APP_IMAGE=|APP_IMAGE_TAG=)/ { next }
             { print }
           ' .deploy-env/.env > .deploy-env/.env.production
           {
@@ -183,4 +194,21 @@ jobs:
           PROD_SSH_PORT="${PROD_SSH_PORT:-22}"
 
           ssh -i ~/.ssh/prod_key -p "$PROD_SSH_PORT" "$PROD_SSH_USER@$PROD_SSH_HOST" \
-            "cd '$PROD_APP_DIR' && git fetch origin main && git checkout main && git pull --ff-only origin main && APP_IMAGE='$APP_IMAGE' APP_IMAGE_TAG='$APP_IMAGE_TAG' bash deploy/deploy-bluegreen.sh && bash deploy/apply-host-nginx.sh && bash deploy/deploy-monitoring.sh"
+            "PROD_APP_DIR='$PROD_APP_DIR' APP_IMAGE='$APP_IMAGE' APP_IMAGE_TAG='$APP_IMAGE_TAG' bash -se" <<'REMOTE_DEPLOY'
+          set -Eeuo pipefail
+
+          cd "$PROD_APP_DIR"
+          git fetch origin main
+          git checkout main
+
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            stash_message="ci pre-deploy tracked changes $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git stash push -m "$stash_message" -- .
+            echo "Stashed local tracked changes before deploy: $stash_message"
+          fi
+
+          git pull --ff-only origin main
+          APP_IMAGE="$APP_IMAGE" APP_IMAGE_TAG="$APP_IMAGE_TAG" bash deploy/deploy-bluegreen.sh
+          bash deploy/apply-host-nginx.sh
+          bash deploy/deploy-monitoring.sh
+          REMOTE_DEPLOY
