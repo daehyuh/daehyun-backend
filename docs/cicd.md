@@ -27,7 +27,7 @@ ghcr.io/daehyuh/daehyun-backend:<commit-sha>
 ghcr.io/daehyuh/daehyun-backend:latest
 ```
 
-Production deploys use the immutable `<commit-sha>` tag.
+Images are published for both `linux/amd64` and `linux/arm64`, because the Oracle Cloud production instance runs on ARM64. Production deploys use the immutable `<commit-sha>` tag.
 
 If the GHCR package is private, include these values in `DEPLOY_ENV_FILE`:
 
