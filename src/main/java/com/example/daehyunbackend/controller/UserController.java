@@ -210,7 +210,7 @@ public class UserController {
         record.setAccount(account);
 
         return ResponseEntity.status(HttpStatus.OK)
-                .body(new com.example.daehyunbackend.response.ApiResponse<>(true, recordRepository.save(record), "계정 동기화 성공"));
+                .body(new com.example.daehyunbackend.response.ApiResponse<>(true, recordService.save(record), "계정 동기화 성공"));
 
     }
 

@@ -1,12 +1,15 @@
 package com.example.daehyunbackend.controller;
 
 import com.example.daehyunbackend.entity.Record;
+import com.example.daehyunbackend.entity.RankType;
 import com.example.daehyunbackend.entity.User;
 import com.example.daehyunbackend.repository.RecordRepository;
 import com.example.daehyunbackend.response.ApiResponse;
+import com.example.daehyunbackend.response.RankEntryResponse;
 import com.example.daehyunbackend.response.UserData;
 import com.example.daehyunbackend.response.UserDataResponse;
 import com.example.daehyunbackend.service.AccountService;
+import com.example.daehyunbackend.service.RankService;
 import com.example.daehyunbackend.service.ReportService;
 import com.example.daehyunbackend.service.UserService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -23,6 +26,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.Mapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
@@ -40,6 +44,7 @@ public class CoreController {
     private final UserService userService;
     private final AccountService accountService;
     private final RecordRepository recordRepository;
+    private final RankService rankService;
 
 
     @Operation(summary = "동접 체크 - ✅전체 접근", tags = {"Core"})
@@ -141,8 +146,20 @@ public class CoreController {
 
     @Operation(summary = "검닉 랭킹 - ✅전체 접근", tags = {"Core"})
     @GetMapping("/rank/black")
-    public List<?> getBlackRank() {
-        return blakRankList();
+    public Object getBlackRank(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String nickname,
+            @RequestParam(required = false) String keyword
+    ) {
+        String searchKeyword = firstNonBlank(nickname, keyword);
+        if (searchKeyword != null) {
+            return rankService.searchRankPage(RankType.BLACK, searchKeyword, page, size);
+        }
+        if (page != null || size != null) {
+            return rankService.getRankPage(RankType.BLACK, page, size);
+        }
+        return rankService.getLegacyRank(RankType.BLACK);
     }
 
     public List<?> blakRankList(){
@@ -204,8 +221,30 @@ public class CoreController {
 
     @Operation(summary = "길드 랭킹 - ✅전체 접근", tags = {"Core"})
     @GetMapping("/rank/guild")
-    public List<?> getGuildBlackRank() {
-        return guildBlackRankList();
+    public Object getGuildBlackRank(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String guildName,
+            @RequestParam(required = false) String keyword
+    ) {
+        String searchKeyword = firstNonBlank(guildName, keyword);
+        if (searchKeyword != null) {
+            return rankService.searchRankPage(RankType.GUILD_BLACK, searchKeyword, page, size);
+        }
+        if (page != null || size != null) {
+            return rankService.getRankPage(RankType.GUILD_BLACK, page, size);
+        }
+        return rankService.getLegacyRank(RankType.GUILD_BLACK);
+    }
+
+    private String firstNonBlank(String first, String second) {
+        if (first != null && !first.isBlank()) {
+            return first;
+        }
+        if (second != null && !second.isBlank()) {
+            return second;
+        }
+        return null;
     }
 
     public List<?> guildBlackRankList() {

@@ -104,6 +104,11 @@ GOOGLE_OAUTH_REDIRECT_URI=https://api.xn--vk1b177d.com/login/oauth2/code/google
 ADMIN_PASSWORD=<secret>
 FRONTEND_URL=https://xn--vk1b177d.com
 FRONTEND_DOMAIN=xn--vk1b177d.com
+
+RANK_PAGE_DEFAULT_SIZE=50
+RANK_PAGE_MAX_SIZE=200
+RANK_CACHE_TTL_SECONDS=60
+RANK_SNAPSHOT_MAX_AGE_SECONDS=900
 ```
 
 After a merge to `main`, the deploy job connects to the production server, fast-forwards `main`, and runs:

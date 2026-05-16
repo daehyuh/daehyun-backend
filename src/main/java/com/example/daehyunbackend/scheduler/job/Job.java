@@ -6,6 +6,7 @@ import com.example.daehyunbackend.repository.AccountRepository;
 import com.example.daehyunbackend.response.UserData;
 import com.example.daehyunbackend.response.UserDataResponse;
 import com.example.daehyunbackend.service.GuestService;
+import com.example.daehyunbackend.service.RankService;
 import com.example.daehyunbackend.service.RecordService;
 import com.example.daehyunbackend.service.ReportService;
 import com.example.daehyunbackend.service.UserService;
@@ -28,6 +29,7 @@ public class Job {
     final private ReportService reportService;
     final private AccountRepository accountRepository;
     final private GuestService guestService;
+    final private RankService rankService;
 
     private final ReentrantLock userRecordLock = new ReentrantLock();
 
@@ -61,6 +63,7 @@ public class Job {
                 log.error("Failed to sync account {} on {}", account.getAccountId(), localDate, e);
             }
         });
+        rankService.refreshRanks(localDate);
     }
 
     private void upsertRecord(Account account, LocalDate localDate) {
