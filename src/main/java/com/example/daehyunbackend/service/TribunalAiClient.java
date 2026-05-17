@@ -42,10 +42,12 @@ public class TribunalAiClient {
 
         String payload = writePayload(request);
         HttpClient client = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofMillis(connectTimeoutMs))
                 .build();
 
         HttpRequest.Builder requestBuilder = HttpRequest.newBuilder(URI.create(reviewUrl()))
+                .version(HttpClient.Version.HTTP_1_1)
                 .timeout(Duration.ofMillis(readTimeoutMs))
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
