@@ -2,6 +2,8 @@ package com.example.daehyunbackend.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -41,6 +43,10 @@ public class TribunalCaseComment {
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "comment_type", length = 30)
+    private TribunalCommentType commentType;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     private TribunalCaseComment parent;
@@ -71,11 +77,37 @@ public class TribunalCaseComment {
         TribunalCaseComment comment = new TribunalCaseComment();
         comment.tribunalCase = tribunalCase;
         comment.author = author;
+        comment.commentType = TribunalCommentType.USER;
         comment.parent = parent;
         comment.content = content;
         comment.anonymous = anonymous;
         comment.createdAt = now;
         comment.updatedAt = now;
         return comment;
+    }
+
+    public static TribunalCaseComment createAiJudgment(
+            TribunalCase tribunalCase,
+            User author,
+            String content,
+            LocalDateTime now
+    ) {
+        TribunalCaseComment comment = new TribunalCaseComment();
+        comment.tribunalCase = tribunalCase;
+        comment.author = author;
+        comment.commentType = TribunalCommentType.AI_JUDGMENT;
+        comment.content = content;
+        comment.anonymous = false;
+        comment.createdAt = now;
+        comment.updatedAt = now;
+        return comment;
+    }
+
+    public TribunalCommentType effectiveCommentType() {
+        return commentType == null ? TribunalCommentType.USER : commentType;
+    }
+
+    public boolean isAiJudgment() {
+        return effectiveCommentType() == TribunalCommentType.AI_JUDGMENT;
     }
 }

@@ -19,6 +19,7 @@ import com.example.daehyunbackend.entity.TribunalVerdict;
 import com.example.daehyunbackend.entity.User;
 import com.example.daehyunbackend.repository.AccountRepository;
 import com.example.daehyunbackend.repository.RecordRepository;
+import com.example.daehyunbackend.repository.TribunalAiReviewRepository;
 import com.example.daehyunbackend.repository.TribunalCaseAnonymousAuthorRepository;
 import com.example.daehyunbackend.repository.TribunalCaseCafeLinkRepository;
 import com.example.daehyunbackend.repository.TribunalCaseCommentRepository;
@@ -27,6 +28,7 @@ import com.example.daehyunbackend.repository.TribunalCaseVoteRepository;
 import com.example.daehyunbackend.repository.TribunalCaseViewRepository;
 import com.example.daehyunbackend.repository.TribunalCommentLikeRepository;
 import com.example.daehyunbackend.repository.TribunalReplayMessageRepository;
+import com.example.daehyunbackend.response.TribunalAiReviewResponse;
 import com.example.daehyunbackend.response.TribunalCafeLinkResponse;
 import com.example.daehyunbackend.response.TribunalAuthorResponse;
 import com.example.daehyunbackend.response.TribunalCaseDetailResponse;
@@ -59,8 +61,10 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class TribunalService {
     private final TribunalReplayScraper replayScraper;
+    private final TribunalAiReviewService aiReviewService;
     private final AccountRepository accountRepository;
     private final RecordRepository recordRepository;
+    private final TribunalAiReviewRepository aiReviewRepository;
     private final TribunalCaseAnonymousAuthorRepository anonymousAuthorRepository;
     private final TribunalCaseRepository tribunalCaseRepository;
     private final TribunalCaseCafeLinkRepository cafeLinkRepository;
@@ -98,6 +102,7 @@ public class TribunalService {
 
         saveCafeLinks(tribunalCase, request.cafeLinks());
         saveReplayMessages(tribunalCase, replay.messages());
+        aiReviewService.enqueueReview(tribunalCase);
 
         return getCase(tribunalCase.getId(), author);
     }
@@ -163,6 +168,9 @@ public class TribunalService {
                         .toList(),
                 voteSummary(tribunalCase, viewer),
                 viewRepository.countByTribunalCase(tribunalCase),
+                aiReviewRepository.findByTribunalCase(tribunalCase)
+                        .map(TribunalAiReviewResponse::from)
+                        .orElse(null),
                 commentRepository.findByTribunalCaseOrderByCreatedAtAsc(tribunalCase).stream()
                         .map(comment -> commentResponse(comment, viewer))
                         .toList()
@@ -201,6 +209,7 @@ public class TribunalService {
         anonymousAuthorRepository.deleteByTribunalCase(tribunalCase);
         voteRepository.deleteByTribunalCase(tribunalCase);
         viewRepository.deleteByTribunalCase(tribunalCase);
+        aiReviewRepository.deleteByTribunalCase(tribunalCase);
         replayMessageRepository.deleteByTribunalCase(tribunalCase);
         cafeLinkRepository.deleteByTribunalCase(tribunalCase);
         tribunalCaseRepository.delete(tribunalCase);
@@ -485,6 +494,19 @@ public class TribunalService {
 
     private TribunalCommentResponse commentResponse(TribunalCaseComment comment, User viewer) {
         boolean likedByMe = viewer != null && commentLikeRepository.findByCommentAndUser(comment, viewer).isPresent();
+        if (comment.isAiJudgment()) {
+            TribunalVerdict aiVerdict = aiReviewRepository.findByTribunalCase(comment.getTribunalCase())
+                    .map(review -> review.getVerdict())
+                    .orElse(null);
+            return TribunalCommentResponse.from(
+                    comment,
+                    TribunalAuthorResponse.system("AI 판결"),
+                    aiVerdict,
+                    commentLikeRepository.countByComment(comment),
+                    likedByMe
+            );
+        }
+
         boolean anonymous = Boolean.TRUE.equals(comment.getAnonymous());
         TribunalVerdict authorVerdict = anonymous ? null : voteRepository.findByTribunalCaseAndVoter(
                         comment.getTribunalCase(),

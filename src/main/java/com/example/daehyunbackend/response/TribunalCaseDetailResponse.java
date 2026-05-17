@@ -23,6 +23,7 @@ public record TribunalCaseDetailResponse(
         List<TribunalReplayMessageResponse> replayMessages,
         TribunalVoteSummaryResponse voteSummary,
         long viewCount,
+        TribunalAiReviewResponse aiReview,
         List<TribunalCommentResponse> comments,
         LocalDateTime replayFetchedAt,
         LocalDateTime createdAt,
@@ -35,6 +36,7 @@ public record TribunalCaseDetailResponse(
             List<TribunalReplayMessageResponse> replayMessages,
             TribunalVoteSummaryResponse voteSummary,
             long viewCount,
+            TribunalAiReviewResponse aiReview,
             List<TribunalCommentResponse> comments
     ) {
         return new TribunalCaseDetailResponse(
@@ -54,6 +56,7 @@ public record TribunalCaseDetailResponse(
                 replayMessages,
                 voteSummary,
                 viewCount,
+                aiReview,
                 comments,
                 tribunalCase.getReplayFetchedAt(),
                 tribunalCase.getCreatedAt(),
