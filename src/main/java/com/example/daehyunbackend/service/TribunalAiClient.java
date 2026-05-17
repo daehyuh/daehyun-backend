@@ -5,21 +5,22 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class TribunalAiClient {
-    private final RestTemplateBuilder restTemplateBuilder;
     private final ObjectMapper objectMapper;
 
     @Value("${tribunal.ai.base-url:http://127.0.0.1:8010}")
@@ -39,30 +40,28 @@ public class TribunalAiClient {
             throw new IllegalArgumentException("AI review request must not be null.");
         }
 
-        RestTemplate restTemplate = restTemplateBuilder
+        String payload = writePayload(request);
+        HttpClient client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofMillis(connectTimeoutMs))
-                .readTimeout(Duration.ofMillis(readTimeoutMs))
                 .build();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder(URI.create(reviewUrl()))
+                .timeout(Duration.ofMillis(readTimeoutMs))
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                .POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8));
         if (apiKey != null && !apiKey.isBlank()) {
-            headers.set("X-Daehyun-AI-Key", apiKey);
+            requestBuilder.header("X-Daehyun-AI-Key", apiKey);
         }
 
-        String payload = writePayload(request);
-        ResponseEntity<TribunalAiReviewClientResponse> response = restTemplate.postForEntity(
-                reviewUrl(),
-                new HttpEntity<>(payload, headers),
-                TribunalAiReviewClientResponse.class
-        );
-
-        TribunalAiReviewClientResponse body = response.getBody();
-        if (body == null) {
-            throw new IllegalStateException("AI server returned an empty response.");
+        HttpResponse<String> response = send(client, requestBuilder.build());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new IllegalStateException(
+                    "AI server returned " + response.statusCode() + ": " + limit(response.body(), 500)
+            );
         }
-        return body;
+
+        return readResponse(response.body());
     }
 
     private String reviewUrl() {
@@ -75,6 +74,35 @@ public class TribunalAiClient {
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize AI review request.", e);
         }
+    }
+
+    private HttpResponse<String> send(HttpClient client, HttpRequest request) {
+        try {
+            return client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("AI review request was interrupted.", e);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to call AI review server.", e);
+        }
+    }
+
+    private TribunalAiReviewClientResponse readResponse(String body) {
+        if (body == null || body.isBlank()) {
+            throw new IllegalStateException("AI server returned an empty response.");
+        }
+        try {
+            return objectMapper.readValue(body, TribunalAiReviewClientResponse.class);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to parse AI review response: " + limit(body, 500), e);
+        }
+    }
+
+    private String limit(String value, int maxLength) {
+        if (value == null || value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength - 3) + "...";
     }
 
     public record TribunalAiReviewClientRequest(
