@@ -10,6 +10,10 @@ public record TribunalAuthorResponse(
         return new TribunalAuthorResponse(nickname, rankPoint, false, mine);
     }
 
+    public static TribunalAuthorResponse system(String nickname) {
+        return new TribunalAuthorResponse(nickname, null, false, false);
+    }
+
     public static TribunalAuthorResponse anonymous(int anonymousNo, boolean mine) {
         return anonymous(anonymousNo, null, mine);
     }

@@ -2,6 +2,7 @@ package com.example.daehyunbackend.repository;
 
 import com.example.daehyunbackend.entity.TribunalCase;
 import com.example.daehyunbackend.entity.TribunalCaseComment;
+import com.example.daehyunbackend.entity.TribunalCommentType;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TribunalCaseCommentRepository extends JpaRepository<TribunalCaseComment, Long> {
@@ -16,6 +18,11 @@ public interface TribunalCaseCommentRepository extends JpaRepository<TribunalCas
     List<TribunalCaseComment> findByTribunalCaseOrderByCreatedAtAsc(TribunalCase tribunalCase);
 
     List<TribunalCaseComment> findByTribunalCaseOrderByIdDesc(TribunalCase tribunalCase);
+
+    Optional<TribunalCaseComment> findFirstByTribunalCaseAndCommentTypeOrderByCreatedAtAsc(
+            TribunalCase tribunalCase,
+            TribunalCommentType commentType
+    );
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update TribunalCaseComment c set c.parent = null where c.tribunalCase = :tribunalCase")
