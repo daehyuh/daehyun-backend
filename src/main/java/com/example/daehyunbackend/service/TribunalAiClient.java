@@ -1,6 +1,8 @@
 package com.example.daehyunbackend.service;
 
 import com.example.daehyunbackend.entity.TribunalVerdict;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -18,6 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TribunalAiClient {
     private final RestTemplateBuilder restTemplateBuilder;
+    private final ObjectMapper objectMapper;
 
     @Value("${tribunal.ai.base-url:http://127.0.0.1:8010}")
     private String baseUrl;
@@ -32,6 +35,10 @@ public class TribunalAiClient {
     private long readTimeoutMs;
 
     public TribunalAiReviewClientResponse review(TribunalAiReviewClientRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("AI review request must not be null.");
+        }
+
         RestTemplate restTemplate = restTemplateBuilder
                 .connectTimeout(Duration.ofMillis(connectTimeoutMs))
                 .readTimeout(Duration.ofMillis(readTimeoutMs))
@@ -39,13 +46,15 @@ public class TribunalAiClient {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         if (apiKey != null && !apiKey.isBlank()) {
             headers.set("X-Daehyun-AI-Key", apiKey);
         }
 
+        String payload = writePayload(request);
         ResponseEntity<TribunalAiReviewClientResponse> response = restTemplate.postForEntity(
                 reviewUrl(),
-                new HttpEntity<>(request, headers),
+                new HttpEntity<>(payload, headers),
                 TribunalAiReviewClientResponse.class
         );
 
@@ -58,6 +67,14 @@ public class TribunalAiClient {
 
     private String reviewUrl() {
         return baseUrl.replaceAll("/+$", "") + "/v1/tribunal/reviews";
+    }
+
+    private String writePayload(TribunalAiReviewClientRequest request) {
+        try {
+            return objectMapper.writeValueAsString(request);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to serialize AI review request.", e);
+        }
     }
 
     public record TribunalAiReviewClientRequest(
