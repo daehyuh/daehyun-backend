@@ -6,6 +6,7 @@ import com.example.daehyunbackend.dto.TribunalReplayPreviewRequest;
 import com.example.daehyunbackend.dto.TribunalVoteRequest;
 import com.example.daehyunbackend.entity.User;
 import com.example.daehyunbackend.response.ApiResponse;
+import com.example.daehyunbackend.response.TribunalAiReviewResponse;
 import com.example.daehyunbackend.response.TribunalCaseDetailResponse;
 import com.example.daehyunbackend.response.TribunalCaseSummaryResponse;
 import com.example.daehyunbackend.response.TribunalCommentResponse;
@@ -108,6 +109,18 @@ public class TribunalController {
                 true,
                 tribunalService.vote(caseId, request, currentUser(authentication)),
                 "투표 반영 성공"
+        ));
+    }
+
+    @PostMapping("/{caseId}/ai-review/retry")
+    public ResponseEntity<ApiResponse<TribunalAiReviewResponse>> retryAiReview(
+            Authentication authentication,
+            @PathVariable Long caseId
+    ) {
+        return ResponseEntity.accepted().body(new ApiResponse<>(
+                true,
+                tribunalService.retryAiReview(caseId, currentUser(authentication)),
+                "AI 판결 재요청 성공"
         ));
     }
 
