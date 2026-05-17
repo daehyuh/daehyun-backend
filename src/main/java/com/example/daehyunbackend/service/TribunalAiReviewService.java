@@ -15,6 +15,7 @@ import com.example.daehyunbackend.repository.TribunalCaseCommentRepository;
 import com.example.daehyunbackend.repository.TribunalCaseRepository;
 import com.example.daehyunbackend.repository.TribunalReplayMessageRepository;
 import com.example.daehyunbackend.repository.UserRepository;
+import com.example.daehyunbackend.response.TribunalAiReviewResponse;
 import com.example.daehyunbackend.support.MafiaJobNameResolver;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,7 +25,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -66,6 +66,16 @@ public class TribunalAiReviewService {
         eventPublisher.publishEvent(new TribunalAiReviewRequestedEvent(tribunalCase.getId()));
     }
 
+    public TribunalAiReviewResponse retryReview(TribunalCase tribunalCase) {
+        LocalDateTime now = LocalDateTime.now();
+        TribunalAiReview review = aiReviewRepository.findByTribunalCase(tribunalCase)
+                .orElseGet(() -> aiReviewRepository.save(TribunalAiReview.pending(tribunalCase, now)));
+        if (enabled && review.getStatus() != TribunalAiReviewStatus.RUNNING) {
+            eventPublisher.publishEvent(new TribunalAiReviewRequestedEvent(tribunalCase.getId(), true));
+        }
+        return TribunalAiReviewResponse.from(review);
+    }
+
     @Async("tribunalAiTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleReviewRequested(TribunalAiReviewRequestedEvent event) {
@@ -73,7 +83,7 @@ public class TribunalAiReviewService {
             return;
         }
 
-        ReviewWork work = transactionTemplate.execute(status -> prepareWork(event.caseId(), status));
+        ReviewWork work = transactionTemplate.execute(status -> prepareWork(event.caseId(), event.force()));
         if (work == null) {
             return;
         }
@@ -87,7 +97,7 @@ public class TribunalAiReviewService {
         }
     }
 
-    private ReviewWork prepareWork(Long caseId, TransactionStatus status) {
+    private ReviewWork prepareWork(Long caseId, boolean force) {
         TribunalCase tribunalCase = tribunalCaseRepository.findById(caseId).orElse(null);
         if (tribunalCase == null) {
             return null;
@@ -96,7 +106,7 @@ public class TribunalAiReviewService {
         TribunalAiReview review = aiReviewRepository.findByTribunalCase(tribunalCase)
                 .orElseGet(() -> aiReviewRepository.save(TribunalAiReview.pending(tribunalCase, LocalDateTime.now())));
         if (review.getStatus() == TribunalAiReviewStatus.RUNNING
-                || review.getStatus() == TribunalAiReviewStatus.SUCCEEDED) {
+                || (review.getStatus() == TribunalAiReviewStatus.SUCCEEDED && !force)) {
             return null;
         }
 

@@ -195,6 +195,13 @@ public class TribunalService {
     }
 
     @Transactional
+    public TribunalAiReviewResponse retryAiReview(Long caseId, User user) {
+        requireAdmin(user);
+        TribunalCase tribunalCase = findCase(caseId);
+        return aiReviewService.retryReview(tribunalCase);
+    }
+
+    @Transactional
     public void deleteCase(Long caseId, User user) {
         requireAdmin(user);
         TribunalCase tribunalCase = findCase(caseId);
