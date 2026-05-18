@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.event.TransactionPhase;
@@ -55,6 +56,18 @@ public class TribunalAiReviewService {
     @Value("${tribunal.ai.enabled:true}")
     private boolean enabled;
 
+    @Value("${tribunal.ai.retry.max-attempts:3}")
+    private int retryMaxAttempts;
+
+    @Value("${tribunal.ai.retry.initial-delay-seconds:60}")
+    private long retryInitialDelaySeconds;
+
+    @Value("${tribunal.ai.retry.max-delay-seconds:600}")
+    private long retryMaxDelaySeconds;
+
+    @Value("${tribunal.ai.retry.batch-size:10}")
+    private int retryBatchSize;
+
     public void enqueueReview(TribunalCase tribunalCase) {
         if (!enabled) {
             return;
@@ -71,9 +84,46 @@ public class TribunalAiReviewService {
         TribunalAiReview review = aiReviewRepository.findByTribunalCase(tribunalCase)
                 .orElseGet(() -> aiReviewRepository.save(TribunalAiReview.pending(tribunalCase, now)));
         if (enabled && review.getStatus() != TribunalAiReviewStatus.RUNNING) {
+            review.markPendingRetry(now);
             eventPublisher.publishEvent(new TribunalAiReviewRequestedEvent(tribunalCase.getId(), true));
         }
         return TribunalAiReviewResponse.from(review);
+    }
+
+    public int retryDueFailures() {
+        if (!enabled || retryMaxAttempts <= 0 || retryBatchSize <= 0) {
+            return 0;
+        }
+
+        Integer retried = transactionTemplate.execute(status -> {
+            LocalDateTime now = LocalDateTime.now();
+            List<TribunalAiReview> dueReviews = aiReviewRepository.findRetryableFailures(
+                    TribunalAiReviewStatus.FAILED,
+                    now,
+                    retryMaxAttempts,
+                    PageRequest.of(0, retryBatchSize)
+            );
+            dueReviews.forEach(review -> {
+                review.markPendingRetry(now);
+                eventPublisher.publishEvent(new TribunalAiReviewRequestedEvent(
+                        review.getTribunalCase().getId(),
+                        true
+                ));
+            });
+            return dueReviews.size();
+        });
+        return retried == null ? 0 : retried;
+    }
+
+    public void retryDueFailuresQuietly() {
+        try {
+            int retried = retryDueFailures();
+            if (retried > 0) {
+                log.info("Scheduled {} failed tribunal AI review(s) for retry.", retried);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to schedule tribunal AI review retries.", e);
+        }
     }
 
     @Async("tribunalAiTaskExecutor")
@@ -182,7 +232,21 @@ public class TribunalAiReviewService {
 
         TribunalAiReview review = aiReviewRepository.findByTribunalCase(tribunalCase)
                 .orElseGet(() -> aiReviewRepository.save(TribunalAiReview.pending(tribunalCase, LocalDateTime.now())));
-        review.markFailed(limit(errorMessage(e), 1000), LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        review.markFailed(limit(errorMessage(e), 1000), nextRetryAt(review, now), now);
+    }
+
+    private LocalDateTime nextRetryAt(TribunalAiReview review, LocalDateTime now) {
+        int attemptCount = review.effectiveRetryCount();
+        if (attemptCount >= retryMaxAttempts) {
+            return null;
+        }
+
+        long delaySeconds = retryInitialDelaySeconds;
+        for (int i = 1; i < attemptCount; i++) {
+            delaySeconds = Math.min(delaySeconds * 2, retryMaxDelaySeconds);
+        }
+        return now.plusSeconds(Math.max(1, delaySeconds));
     }
 
     private void saveAiComment(

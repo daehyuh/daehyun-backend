@@ -29,7 +29,8 @@ import java.time.LocalDateTime;
         name = "tribunal_ai_review",
         indexes = {
                 @Index(name = "idx_tribunal_ai_review_status", columnList = "status"),
-                @Index(name = "idx_tribunal_ai_review_case", columnList = "case_id")
+                @Index(name = "idx_tribunal_ai_review_case", columnList = "case_id"),
+                @Index(name = "idx_tribunal_ai_review_retry_due", columnList = "status, next_retry_at")
         },
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_tribunal_ai_review_case", columnNames = "case_id")
@@ -94,6 +95,12 @@ public class TribunalAiReview {
     @Column(name = "error_message", length = 1000)
     private String errorMessage;
 
+    @Column(name = "retry_count")
+    private Integer retryCount;
+
+    @Column(name = "next_retry_at")
+    private LocalDateTime nextRetryAt;
+
     @Column(name = "requested_at", nullable = false)
     private LocalDateTime requestedAt;
 
@@ -110,16 +117,30 @@ public class TribunalAiReview {
         TribunalAiReview review = new TribunalAiReview();
         review.tribunalCase = tribunalCase;
         review.status = TribunalAiReviewStatus.PENDING;
+        review.retryCount = 0;
         review.requestedAt = now;
         review.updatedAt = now;
         return review;
     }
 
+    public void markPendingRetry(LocalDateTime now) {
+        this.status = TribunalAiReviewStatus.PENDING;
+        this.requestedAt = now;
+        this.startedAt = null;
+        this.completedAt = null;
+        this.errorMessage = null;
+        this.nextRetryAt = null;
+        this.updatedAt = now;
+    }
+
     public void markRunning(LocalDateTime now) {
         this.status = TribunalAiReviewStatus.RUNNING;
         this.startedAt = now;
+        this.completedAt = null;
         this.updatedAt = now;
         this.errorMessage = null;
+        this.nextRetryAt = null;
+        this.retryCount = effectiveRetryCount() + 1;
     }
 
     public void markSucceeded(
@@ -151,14 +172,20 @@ public class TribunalAiReview {
         this.model = model;
         this.rawResponse = rawResponse;
         this.errorMessage = null;
+        this.nextRetryAt = null;
         this.completedAt = now;
         this.updatedAt = now;
     }
 
-    public void markFailed(String errorMessage, LocalDateTime now) {
+    public void markFailed(String errorMessage, LocalDateTime nextRetryAt, LocalDateTime now) {
         this.status = TribunalAiReviewStatus.FAILED;
         this.errorMessage = errorMessage;
+        this.nextRetryAt = nextRetryAt;
         this.completedAt = now;
         this.updatedAt = now;
+    }
+
+    public int effectiveRetryCount() {
+        return retryCount == null ? 0 : retryCount;
     }
 }

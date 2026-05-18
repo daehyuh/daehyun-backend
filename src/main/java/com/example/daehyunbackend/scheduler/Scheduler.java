@@ -2,6 +2,7 @@ package com.example.daehyunbackend.scheduler;
 
 import com.example.daehyunbackend.scheduler.job.Job;
 import com.example.daehyunbackend.service.LegacyDataMigrationService;
+import com.example.daehyunbackend.service.TribunalAiReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,7 @@ public class Scheduler {
 
     private final Job job;
     private final LegacyDataMigrationService legacyDataMigrationService;
+    private final TribunalAiReviewService tribunalAiReviewService;
 
      @Scheduled(cron = "0 */15 * * * *")
      public void schedule15min() {
@@ -35,5 +37,13 @@ public class Scheduler {
     )
     public void migrateLegacyRecords() {
         legacyDataMigrationService.migrateNextBatchQuietly();
+    }
+
+    @Scheduled(
+            fixedDelayString = "${tribunal.ai.retry.fixed-delay-ms:60000}",
+            initialDelayString = "${tribunal.ai.retry.initial-delay-ms:30000}"
+    )
+    public void retryFailedTribunalAiReviews() {
+        tribunalAiReviewService.retryDueFailuresQuietly();
     }
 }
