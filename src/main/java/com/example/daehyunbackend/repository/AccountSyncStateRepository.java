@@ -9,5 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface AccountSyncStateRepository extends JpaRepository<AccountSyncState, Long> {
+    long deleteByAccount(Account account);
     Optional<AccountSyncState> findByAccount(Account account);
 }

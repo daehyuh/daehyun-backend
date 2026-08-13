@@ -49,4 +49,8 @@ public class Account {
         this.user = user;
         this.secretKey = secretKey;
     }
+
+    public void unlink() {
+        this.user = null;
+    }
 }

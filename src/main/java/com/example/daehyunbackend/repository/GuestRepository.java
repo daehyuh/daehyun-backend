@@ -13,4 +13,6 @@ import java.util.List;
 public interface GuestRepository extends JpaRepository<Guest, Long> {
 
     List<Guest> findByNickName(String nickName);
+
+    long deleteByAccountIdAndUser(Long accountId, User user);
 }

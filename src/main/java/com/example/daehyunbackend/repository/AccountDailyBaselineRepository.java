@@ -10,5 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface AccountDailyBaselineRepository extends JpaRepository<AccountDailyBaseline, Long> {
+    long countByAccount(Account account);
+    long deleteByAccount(Account account);
     Optional<AccountDailyBaseline> findByAccountAndBaselineDate(Account account, LocalDate baselineDate);
 }

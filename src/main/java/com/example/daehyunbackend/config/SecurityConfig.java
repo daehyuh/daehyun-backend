@@ -82,6 +82,7 @@ public class SecurityConfig {
                         .requestMatchers("/User/Account/syncAll").authenticated()
                         .requestMatchers("/User/Account/syncAllDay").authenticated()
                         .requestMatchers("/User/profile/me").authenticated()
+                        .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/Account/addGuest").authenticated()
                         .anyRequest().authenticated()
                 )
