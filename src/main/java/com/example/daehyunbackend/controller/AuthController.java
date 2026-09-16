@@ -24,7 +24,7 @@ public class AuthController {
     private String frontendUrl;
     @Value("${frontend.domain}")
     private String frontendDomain;
-    @Value("${mobile.oauth.deep-link:com.daehyun.webview://oauth/callback}")
+    @Value("${mobile.oauth.deep-link:com.daehyun.app://oauth/callback}")
     private String mobileDeepLink;
 
     AuthService authService;
