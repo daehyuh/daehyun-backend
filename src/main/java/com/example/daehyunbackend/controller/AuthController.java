@@ -35,7 +35,28 @@ public class AuthController {
 
     @Operation(summary = "👑테스트 - 로그인 콜백", tags = {"Auth"})
     @GetMapping("/login/oauth2/code/google")
-    public String googleLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) {
+    public void googleLogin(
+            @RequestParam String code,
+            @RequestParam(required = false) String state,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws java.io.IOException {
+        if (authService.isMobileOAuthState(state)) {
+            try {
+                String ticket = authService.createMobileLoginTicket(code, state);
+                response.sendRedirect(UriComponentsBuilder.fromUriString(mobileDeepLink)
+                        .queryParam("ticket", ticket)
+                        .build()
+                        .toUriString());
+            } catch (RuntimeException exception) {
+                response.sendRedirect(UriComponentsBuilder.fromUriString(mobileDeepLink)
+                        .queryParam("error", "oauth_failed")
+                        .build()
+                        .toUriString());
+            }
+            return;
+        }
+
         AuthResponseDTO authResponseDTO = authService.socialLogin(code);
 
         String accessToken = authResponseDTO.getAccessToken();
@@ -47,7 +68,7 @@ public class AuthController {
         response.addHeader("Set-Cookie", "refreshToken=" + refreshToken + "; Path=/; Domain="+frontendDomain+"; SameSite=None; Secure;");
 
 
-        return "redirect:"+frontendUrl;
+        response.sendRedirect(frontendUrl);
     }
 
     @Operation(summary = "모바일 Google OAuth 시작", tags = {"Auth"})

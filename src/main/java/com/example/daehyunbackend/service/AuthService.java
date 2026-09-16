@@ -84,6 +84,16 @@ public class AuthService {
                 .toUriString();
     }
 
+    public boolean isMobileOAuthState(String rawState) {
+        if (rawState == null || rawState.isBlank()) {
+            return false;
+        }
+
+        return mobileOAuthStateRepository.findByStateHash(hash(rawState))
+                .filter(state -> state.isUsable(LocalDateTime.now()))
+                .isPresent();
+    }
+
     @org.springframework.transaction.annotation.Transactional
     public String createMobileLoginTicket(String code, String rawState) {
         LocalDateTime now = LocalDateTime.now();
