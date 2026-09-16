@@ -68,6 +68,10 @@ public class SecurityConfig {
                                 "/core/ad",
                                 "/core/ad/**",
                                 "/login/oauth2/code/google",
+                                "/login/oauth2/code/google/mobile",
+                                "/auth/mobile/start",
+                                "/auth/mobile/exchange",
+                                "/auth/mobile/refresh",
                                 "/core/logout",
                                 "User/Account/syncGuest",
                                 "/Account/syncOneGuest/"
@@ -97,7 +101,10 @@ public class SecurityConfig {
         config.setAllowedOrigins(List.of(
                 "https://xn--vk1b177d.com",
                 "http://localhost:5173",
-                "https://api.xn--vk1b177d.com"
+                "https://api.xn--vk1b177d.com",
+                "https://localhost",
+                "http://localhost",
+                "capacitor://localhost"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
